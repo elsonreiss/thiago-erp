@@ -57,10 +57,10 @@ export default async function DashboardPage() {
     container.customerRepository.findAll().then((c) => c.length),
   ]);
 
-  const lowStockProducts =
+  const stockAlertProducts =
     problemProducts.length > 0
-      ? problemProducts.slice(0, 5)
-      : (await container.productRepository.findAll({ stockStatus: "estoque_baixo" })).slice(0, 5);
+      ? problemProducts
+      : await container.productRepository.findAll({ stockStatus: "estoque_baixo" });
 
   let salesToday = 0;
   let revenueToday = 0;
@@ -266,11 +266,11 @@ export default async function DashboardPage() {
           <h2 className="mb-4 flex items-center gap-2 font-display text-base font-semibold text-text-primary">
             <AlertTriangle size={18} className="text-warning" /> Alertas de estoque
           </h2>
-          {lowStockProducts.length === 0 ? (
+          {stockAlertProducts.length === 0 ? (
             <p className="text-sm text-text-muted">Nenhum alerta de estoque no momento.</p>
           ) : (
-            <div className="flex flex-col gap-2">
-              {lowStockProducts.map((product) => (
+            <div className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
+              {stockAlertProducts.map((product) => (
                 <Link
                   key={product.id}
                   href={`/estoque/${product.id}`}
@@ -280,6 +280,9 @@ export default async function DashboardPage() {
                     <p className="truncate text-text-primary">{product.name}</p>
                     <p className="text-xs text-text-muted">
                       {product.quantity} {product.unit} em estoque · mínimo {product.min_stock}
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      Compra: {formatCurrency(product.purchase_price)} · Venda: {formatCurrency(product.sale_price)}
                     </p>
                   </div>
                   <ProductStatusBadge status={getStockStatus(product)} />

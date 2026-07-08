@@ -103,12 +103,13 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
       </form>
 
       <div className="price-tag-card overflow-x-auto rounded-xl">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">Produto</th>
               <th className="px-4 py-3 font-medium">Categoria</th>
               <th className="px-4 py-3 font-medium text-right">Qtd.</th>
+              <th className="px-4 py-3 font-medium text-right">Preço compra</th>
               <th className="px-4 py-3 font-medium text-right">Preço venda</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium text-right">Ações</th>
@@ -117,7 +118,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
           <tbody>
             {products.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
                   Nenhum produto encontrado.
                 </td>
               </tr>
@@ -144,6 +145,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
                 <td className="px-4 py-3 text-right font-numeric">
                   {product.quantity} {product.unit}
                 </td>
+                <td className="px-4 py-3 text-right font-numeric">{formatCurrency(product.purchase_price)}</td>
                 <td className="px-4 py-3 text-right font-numeric">{formatCurrency(product.sale_price)}</td>
                 <td className="px-4 py-3">
                   <ProductStatusBadge status={getStockStatus(product)} />
