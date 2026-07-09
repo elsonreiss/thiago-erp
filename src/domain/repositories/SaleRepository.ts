@@ -1,7 +1,10 @@
 import { PaymentMethod, SaleWithItems } from "@/domain/entities/Sale";
 
 export interface CreateSaleItemInput {
-  product_id: number;
+  /** Null quando é um item avulso (digitado na hora, sem produto cadastrado no estoque). */
+  product_id: number | null;
+  /** Obrigatório quando product_id é null — nome do item avulso. */
+  product_name?: string;
   quantity: number;
   unit_price: string;
 }

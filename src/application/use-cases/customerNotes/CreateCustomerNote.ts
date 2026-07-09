@@ -16,7 +16,9 @@ function validate(input: CreateCustomerNoteInput) {
     throw new CustomerNoteValidationError("Adicione ao menos um item à nota.");
   }
   for (const item of input.items) {
-    if (!item.product_id) throw new CustomerNoteValidationError("Item inválido: produto não informado.");
+    if (!item.product_id && !item.product_name?.trim()) {
+      throw new CustomerNoteValidationError("Item avulso precisa de um nome.");
+    }
     if (!item.quantity || item.quantity <= 0) {
       throw new CustomerNoteValidationError("A quantidade de cada item deve ser maior que zero.");
     }

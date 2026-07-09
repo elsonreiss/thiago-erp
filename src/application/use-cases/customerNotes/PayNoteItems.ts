@@ -10,14 +10,21 @@ export class CustomerNoteNotFoundError extends Error {
   }
 }
 
+export class PayNoteItemsValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PayNoteItemsValidationError";
+  }
+}
+
 /**
- * Registra um pagamento (total ou parcial) numa nota de cliente.
- * O dinheiro só entra no financeiro quando a nota fica totalmente quitada: nesse
- * momento uma venda de verdade é criada (sem baixar estoque de novo, pois a
- * nota já tirou os itens do estoque no lançamento) e passa a aparecer em
- * Vendas/Financeiro/Relatórios/Dashboard normalmente.
+ * Marca itens específicos de uma nota como pagos — pra quando o cliente
+ * paga só parte da nota (alguns produtos, não todos). O valor pago é a soma
+ * dos subtotais dos itens marcados. Assim como no pagamento por valor livre,
+ * se isso quitar a nota inteira, uma venda de verdade é criada automaticamente
+ * (sem baixar estoque de novo) e passa a contar no financeiro.
  */
-export class RegisterNotePayment {
+export class PayNoteItems {
   constructor(
     private customerNoteRepository: CustomerNoteRepository,
     private saleRepository: SaleRepository
@@ -25,12 +32,16 @@ export class RegisterNotePayment {
 
   async execute(
     noteId: number,
-    input: { amount: string; payment_method: PaymentMethod }
+    input: { item_ids: number[]; payment_method: PaymentMethod }
   ): Promise<CustomerNoteWithItems> {
+    if (!input.item_ids || input.item_ids.length === 0) {
+      throw new PayNoteItemsValidationError("Selecione ao menos um item para marcar como pago.");
+    }
+
     const existing = await this.customerNoteRepository.findById(noteId);
     if (!existing) throw new CustomerNoteNotFoundError();
 
-    const updated = await this.customerNoteRepository.registerPayment(noteId, input.amount, input.payment_method);
+    const updated = await this.customerNoteRepository.payItems(noteId, input.item_ids, input.payment_method);
 
     if (updated.status === "pago" && !updated.sale_id) {
       const sale = await this.saleRepository.create({

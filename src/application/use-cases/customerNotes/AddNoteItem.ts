@@ -9,7 +9,9 @@ export class CustomerNoteItemValidationError extends Error {
 }
 
 function validate(item: CreateCustomerNoteItemInput) {
-  if (!item.product_id) throw new CustomerNoteItemValidationError("Produto não informado.");
+  if (!item.product_id && !item.product_name?.trim()) {
+    throw new CustomerNoteItemValidationError("Item avulso precisa de um nome.");
+  }
   if (!item.quantity || item.quantity <= 0) {
     throw new CustomerNoteItemValidationError("A quantidade deve ser maior que zero.");
   }

@@ -13,7 +13,9 @@ function validate(input: CreateSaleInput) {
     throw new SaleValidationError("Adicione ao menos um item à venda.");
   }
   for (const item of input.items) {
-    if (!item.product_id) throw new SaleValidationError("Item inválido: produto não informado.");
+    if (!item.product_id && !item.product_name?.trim()) {
+      throw new SaleValidationError("Item avulso precisa de um nome.");
+    }
     if (!item.quantity || item.quantity <= 0) {
       throw new SaleValidationError("A quantidade de cada item deve ser maior que zero.");
     }

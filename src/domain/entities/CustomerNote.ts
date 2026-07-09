@@ -23,6 +23,7 @@ export interface CustomerNoteItem {
   quantity: number;
   unit_price: string;
   subtotal: string;
+  paid: boolean;
   created_at: string;
 }
 

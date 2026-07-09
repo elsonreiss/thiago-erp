@@ -88,37 +88,45 @@ export class PgSaleRepository implements SaleRepository {
   async create(input: CreateSaleInput): Promise<SaleWithItems> {
     return withTransaction(async (client) => {
       let subtotalSum = 0;
-      const itemRows: Array<{ product_id: number; product_name: string; quantity: number; unit_price: string; subtotal: string }> = [];
+      const itemRows: Array<{ product_id: number | null; product_name: string; quantity: number; unit_price: string; subtotal: string }> = [];
 
       for (const item of input.items) {
-        const { rows: productRows } = await client.query(
-          `SELECT * FROM products WHERE id = $1 FOR UPDATE`,
-          [item.product_id]
-        );
-        const product = productRows[0];
-        if (!product) throw new Error(`Produto ${item.product_id} não encontrado.`);
-        if (!input.skipStockDecrement && product.quantity < item.quantity) {
-          throw new Error(`Estoque insuficiente para "${product.name}" (disponível: ${product.quantity}).`);
+        let productName: string;
+
+        if (item.product_id) {
+          const { rows: productRows } = await client.query(
+            `SELECT * FROM products WHERE id = $1 FOR UPDATE`,
+            [item.product_id]
+          );
+          const product = productRows[0];
+          if (!product) throw new Error(`Produto ${item.product_id} não encontrado.`);
+          if (!input.skipStockDecrement && product.quantity < item.quantity) {
+            throw new Error(`Estoque insuficiente para "${product.name}" (disponível: ${product.quantity}).`);
+          }
+          productName = product.name;
+
+          // Nota de cliente (fiado) já baixou o estoque no momento em que foi registrada;
+          // ao quitá-la e virar venda de verdade, não baixamos de novo.
+          if (!input.skipStockDecrement) {
+            await client.query(
+              `UPDATE products SET quantity = quantity - $1, updated_at = now() WHERE id = $2`,
+              [item.quantity, item.product_id]
+            );
+          }
+        } else {
+          // Item avulso: digitado na hora, sem produto cadastrado — não mexe em estoque.
+          productName = item.product_name?.trim() || "Item avulso";
         }
 
         const subtotal = (parseFloat(item.unit_price) * item.quantity).toFixed(2);
         subtotalSum += parseFloat(subtotal);
         itemRows.push({
-          product_id: item.product_id,
-          product_name: product.name,
+          product_id: item.product_id ?? null,
+          product_name: productName,
           quantity: item.quantity,
           unit_price: item.unit_price,
           subtotal,
         });
-
-        // Nota de cliente (fiado) já baixou o estoque no momento em que foi registrada;
-        // ao quitá-la e virar venda de verdade, não baixamos de novo.
-        if (!input.skipStockDecrement) {
-          await client.query(
-            `UPDATE products SET quantity = quantity - $1, updated_at = now() WHERE id = $2`,
-            [item.quantity, item.product_id]
-          );
-        }
       }
 
       const discount = parseFloat(input.discount || "0");

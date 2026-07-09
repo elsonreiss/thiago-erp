@@ -2,7 +2,10 @@ import { PaymentMethod } from "@/domain/entities/Sale";
 import { CustomerNoteStatus, CustomerNoteWithItems } from "@/domain/entities/CustomerNote";
 
 export interface CreateCustomerNoteItemInput {
-  product_id: number;
+  /** Null quando é um item avulso (digitado na hora, sem produto cadastrado no estoque). */
+  product_id: number | null;
+  /** Obrigatório quando product_id é null — nome do item avulso. */
+  product_name?: string;
   quantity: number;
   unit_price: string;
 }
@@ -34,8 +37,10 @@ export interface CustomerNoteRepository {
   addItem(noteId: number, item: CreateCustomerNoteItemInput): Promise<CustomerNoteWithItems>;
   /** Remove um item da nota, devolvendo a quantidade ao estoque e recalculando o total. */
   removeItem(noteId: number, itemId: number): Promise<CustomerNoteWithItems>;
-  /** Registra um pagamento (total ou parcial). Atualiza paid_amount/status/paid_at. */
+  /** Registra um pagamento (total ou parcial) sem vincular a itens específicos. Atualiza paid_amount/status/paid_at. */
   registerPayment(id: number, amount: string, paymentMethod: PaymentMethod): Promise<CustomerNoteWithItems>;
+  /** Marca itens específicos como pagos (soma dos subtotais vira o valor do pagamento) — pra quando o cliente paga só parte da nota. */
+  payItems(noteId: number, itemIds: number[], paymentMethod: PaymentMethod): Promise<CustomerNoteWithItems>;
   /** Vincula a venda gerada quando a nota é quitada (dinheiro só entra no financeiro aqui). */
   attachSale(id: number, saleId: number): Promise<void>;
   delete(id: number): Promise<void>;

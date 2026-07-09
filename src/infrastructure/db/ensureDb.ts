@@ -195,9 +195,11 @@ const STATEMENTS: string[] = [
     quantity INTEGER NOT NULL,
     unit_price NUMERIC(12,2) NOT NULL,
     subtotal NUMERIC(12,2) NOT NULL,
+    paid BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
   `ALTER TABLE customer_note_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()`,
+  `ALTER TABLE customer_note_items ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT false`,
   `CREATE INDEX IF NOT EXISTS idx_customer_note_items_note_id ON customer_note_items(note_id)`,
 
   `CREATE TABLE IF NOT EXISTS customer_note_payments (

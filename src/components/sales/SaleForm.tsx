@@ -2,17 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ShoppingCart, Trash2, User, X } from "lucide-react";
+import { Loader2, PackagePlus, ShoppingCart, Trash2, User, X } from "lucide-react";
 import { Product } from "@/domain/entities/Product";
 import { Customer } from "@/domain/entities/Customer";
 import { PaymentMethod } from "@/domain/entities/Sale";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from "@/lib/payment";
 import { formatCurrency, parseCurrencyInput } from "@/lib/format";
 import { Autocomplete } from "@/components/ui/Autocomplete";
+import { ManualItemForm } from "@/components/ui/ManualItemForm";
 
 interface CartLine {
   key: string;
-  product: Product;
+  product: Product | null;
+  manualName: string;
   quantity: number;
   unit_price: string; // "0.00"
 }
@@ -22,6 +24,7 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [showManual, setShowManual] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("dinheiro");
   const [discount, setDiscount] = useState("0,00");
   const [notes, setNotes] = useState("");
@@ -37,10 +40,10 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
 
   function addProduct(product: Product) {
     setLines((prev) => {
-      const existing = prev.find((l) => l.product.id === product.id);
+      const existing = prev.find((l) => l.product?.id === product.id);
       if (existing) {
         return prev.map((l) =>
-          l.product.id === product.id ? { ...l, quantity: l.quantity + 1 } : l
+          l.product?.id === product.id ? { ...l, quantity: l.quantity + 1 } : l
         );
       }
       return [
@@ -48,11 +51,26 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
         {
           key: `${product.id}-${Date.now()}`,
           product,
+          manualName: "",
           quantity: 1,
           unit_price: product.sale_price,
         },
       ];
     });
+  }
+
+  function addManualItem(name: string, quantity: number, unitPrice: string) {
+    setLines((prev) => [
+      ...prev,
+      {
+        key: `manual-${Date.now()}`,
+        product: null,
+        manualName: name,
+        quantity,
+        unit_price: unitPrice,
+      },
+    ]);
+    setShowManual(false);
   }
 
   function updateLine(key: string, patch: Partial<CartLine>) {
@@ -72,7 +90,7 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
       return;
     }
     for (const line of lines) {
-      if (line.quantity > line.product.quantity) {
+      if (line.product && line.quantity > line.product.quantity) {
         setError(`Estoque insuficiente para "${line.product.name}" (disponível: ${line.product.quantity}).`);
         return;
       }
@@ -86,7 +104,8 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
         discount: parseCurrencyInput(discount),
         notes: notes.trim() || null,
         items: lines.map((l) => ({
-          product_id: l.product.id,
+          product_id: l.product?.id ?? null,
+          product_name: l.product ? undefined : l.manualName,
           quantity: l.quantity,
           unit_price: parseCurrencyInput(l.unit_price),
         })),
@@ -151,7 +170,17 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
       </div>
 
       <div className="price-tag-card rounded-xl p-6">
-        <h2 className="mb-4 font-display text-base font-semibold text-text-primary">Itens</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-base font-semibold text-text-primary">Itens</h2>
+          <button
+            type="button"
+            onClick={() => setShowManual((v) => !v)}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-bg-secondary"
+          >
+            <PackagePlus size={14} /> Item avulso (sem cadastro)
+          </button>
+        </div>
+
         <Autocomplete<Product>
           searchUrl="/api/products/autocomplete"
           responseKey="products"
@@ -161,6 +190,12 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
           onSelect={addProduct}
           placeholder="Buscar produto por nome ou código..."
         />
+
+        {showManual && (
+          <div className="mt-3">
+            <ManualItemForm onAdd={addManualItem} onCancel={() => setShowManual(false)} />
+          </div>
+        )}
 
         {lines.length === 0 ? (
           <p className="mt-4 flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-6 text-sm text-text-muted">
@@ -181,14 +216,23 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
               <tbody>
                 {lines.map((line) => {
                   const lineSubtotal = parseFloat(line.unit_price || "0") * line.quantity;
-                  const overStock = line.quantity > line.product.quantity;
+                  const overStock = !!line.product && line.quantity > line.product.quantity;
                   return (
                     <tr key={line.key} className="border-b border-border last:border-0">
                       <td className="py-2 pr-3">
-                        <p className="text-text-primary">{line.product.name}</p>
-                        <p className="text-xs text-text-muted">
-                          {line.product.code} · estoque: {line.product.quantity} {line.product.unit}
+                        <p className="text-text-primary">
+                          {line.product ? line.product.name : line.manualName}
+                          {!line.product && (
+                            <span className="ml-2 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning">
+                              avulso
+                            </span>
+                          )}
                         </p>
+                        {line.product && (
+                          <p className="text-xs text-text-muted">
+                            {line.product.code} · estoque: {line.product.quantity} {line.product.unit}
+                          </p>
+                        )}
                         {overStock && (
                           <p className="text-xs font-medium text-danger">Quantidade maior que o estoque!</p>
                         )}

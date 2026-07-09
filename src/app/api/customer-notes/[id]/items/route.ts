@@ -19,7 +19,8 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   const input: CreateCustomerNoteItemInput = {
-    product_id: Number(body.product_id),
+    product_id: body.product_id ? Number(body.product_id) : null,
+    product_name: body.product_name ?? undefined,
     quantity: Number(body.quantity),
     unit_price: String(body.unit_price),
   };

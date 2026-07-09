@@ -134,34 +134,42 @@ export class PgCustomerNoteRepository implements CustomerNoteRepository {
   async create(input: CreateCustomerNoteInput): Promise<CustomerNoteWithItems> {
     return withTransaction(async (client) => {
       let subtotalSum = 0;
-      const itemRows: Array<{ product_id: number; product_name: string; quantity: number; unit_price: string; subtotal: string }> = [];
+      const itemRows: Array<{ product_id: number | null; product_name: string; quantity: number; unit_price: string; subtotal: string }> = [];
 
       for (const item of input.items) {
-        const { rows: productRows } = await client.query(
-          `SELECT * FROM products WHERE id = $1 FOR UPDATE`,
-          [item.product_id]
-        );
-        const product = productRows[0];
-        if (!product) throw new Error(`Produto ${item.product_id} não encontrado.`);
-        if (product.quantity < item.quantity) {
-          throw new Error(`Estoque insuficiente para "${product.name}" (disponível: ${product.quantity}).`);
+        let productName: string;
+
+        if (item.product_id) {
+          const { rows: productRows } = await client.query(
+            `SELECT * FROM products WHERE id = $1 FOR UPDATE`,
+            [item.product_id]
+          );
+          const product = productRows[0];
+          if (!product) throw new Error(`Produto ${item.product_id} não encontrado.`);
+          if (product.quantity < item.quantity) {
+            throw new Error(`Estoque insuficiente para "${product.name}" (disponível: ${product.quantity}).`);
+          }
+          productName = product.name;
+
+          // A nota já sai do estoque na hora do lançamento (o cliente já levou a mercadoria).
+          await client.query(
+            `UPDATE products SET quantity = quantity - $1, updated_at = now() WHERE id = $2`,
+            [item.quantity, item.product_id]
+          );
+        } else {
+          // Item avulso: digitado na hora, sem produto cadastrado — não mexe em estoque.
+          productName = item.product_name?.trim() || "Item avulso";
         }
 
         const subtotal = (parseFloat(item.unit_price) * item.quantity).toFixed(2);
         subtotalSum += parseFloat(subtotal);
         itemRows.push({
-          product_id: item.product_id,
-          product_name: product.name,
+          product_id: item.product_id ?? null,
+          product_name: productName,
           quantity: item.quantity,
           unit_price: item.unit_price,
           subtotal,
         });
-
-        // A nota já sai do estoque na hora do lançamento (o cliente já levou a mercadoria).
-        await client.query(
-          `UPDATE products SET quantity = quantity - $1, updated_at = now() WHERE id = $2`,
-          [item.quantity, item.product_id]
-        );
       }
 
       const total = subtotalSum.toFixed(2);
@@ -197,14 +205,28 @@ export class PgCustomerNoteRepository implements CustomerNoteRepository {
       if (!note) throw new Error("Nota não encontrada.");
       if (note.status === "pago") throw new Error("Esta nota já está quitada — não é possível adicionar itens.");
 
-      const { rows: productRows } = await client.query(
-        `SELECT * FROM products WHERE id = $1 FOR UPDATE`,
-        [item.product_id]
-      );
-      const product = productRows[0];
-      if (!product) throw new Error(`Produto ${item.product_id} não encontrado.`);
-      if (product.quantity < item.quantity) {
-        throw new Error(`Estoque insuficiente para "${product.name}" (disponível: ${product.quantity}).`);
+      let productId: number | null = null;
+      let productName: string;
+
+      if (item.product_id) {
+        const { rows: productRows } = await client.query(
+          `SELECT * FROM products WHERE id = $1 FOR UPDATE`,
+          [item.product_id]
+        );
+        const product = productRows[0];
+        if (!product) throw new Error(`Produto ${item.product_id} não encontrado.`);
+        if (product.quantity < item.quantity) {
+          throw new Error(`Estoque insuficiente para "${product.name}" (disponível: ${product.quantity}).`);
+        }
+        productId = item.product_id;
+        productName = product.name;
+
+        await client.query(
+          `UPDATE products SET quantity = quantity - $1, updated_at = now() WHERE id = $2`,
+          [item.quantity, item.product_id]
+        );
+      } else {
+        productName = item.product_name?.trim() || "Item avulso";
       }
 
       const subtotal = (parseFloat(item.unit_price) * item.quantity).toFixed(2);
@@ -212,11 +234,7 @@ export class PgCustomerNoteRepository implements CustomerNoteRepository {
       await client.query(
         `INSERT INTO customer_note_items (note_id, product_id, product_name, quantity, unit_price, subtotal)
          VALUES ($1,$2,$3,$4,$5,$6)`,
-        [noteId, item.product_id, product.name, item.quantity, item.unit_price, subtotal]
-      );
-      await client.query(
-        `UPDATE products SET quantity = quantity - $1, updated_at = now() WHERE id = $2`,
-        [item.quantity, item.product_id]
+        [noteId, productId, productName, item.quantity, item.unit_price, subtotal]
       );
 
       const newTotal = await recalculateTotal(client, noteId);
@@ -246,12 +264,13 @@ export class PgCustomerNoteRepository implements CustomerNoteRepository {
       if (!note) throw new Error("Nota não encontrada.");
       if (note.status === "pago") throw new Error("Esta nota já está quitada — não é possível remover itens.");
 
-      const { rows: itemRows } = await client.query<{ product_id: number | null; quantity: number }>(
-        `SELECT product_id, quantity FROM customer_note_items WHERE id = $1 AND note_id = $2`,
+      const { rows: itemRows } = await client.query<{ product_id: number | null; quantity: number; paid: boolean }>(
+        `SELECT product_id, quantity, paid FROM customer_note_items WHERE id = $1 AND note_id = $2`,
         [itemId, noteId]
       );
       const item = itemRows[0];
       if (!item) throw new Error("Item não encontrado nesta nota.");
+      if (item.paid) throw new Error("Este item já foi marcado como pago — não é possível removê-lo.");
 
       const { rows: countRows } = await client.query<{ count: string }>(
         `SELECT COUNT(*)::text AS count FROM customer_note_items WHERE note_id = $1`,
@@ -322,6 +341,64 @@ export class PgCustomerNoteRepository implements CustomerNoteRepository {
     });
 
     const updated = await this.findById(id);
+    if (!updated) throw new Error("Nota não encontrada após atualização.");
+    return updated;
+  }
+
+  async payItems(noteId: number, itemIds: number[], paymentMethod: PaymentMethod): Promise<CustomerNoteWithItems> {
+    await withTransaction(async (client) => {
+      const { rows: noteRows } = await client.query<{ total: string; paid_amount: string; status: string }>(
+        `SELECT total, paid_amount, status FROM customer_notes WHERE id = $1 FOR UPDATE`,
+        [noteId]
+      );
+      const note = noteRows[0];
+      if (!note) throw new Error("Nota não encontrada.");
+      if (note.status === "pago") throw new Error("Esta nota já está quitada.");
+
+      const { rows: items } = await client.query<{ id: number; subtotal: string; paid: boolean }>(
+        `SELECT id, subtotal, paid FROM customer_note_items WHERE note_id = $1 AND id = ANY($2::int[])`,
+        [noteId, itemIds]
+      );
+      if (items.length !== itemIds.length) {
+        throw new Error("Algum item selecionado não pertence a esta nota.");
+      }
+      const alreadyPaidItem = items.find((i) => i.paid);
+      if (alreadyPaidItem) {
+        throw new Error("Algum item selecionado já está marcado como pago.");
+      }
+
+      const amountNum = items.reduce((sum, i) => sum + parseFloat(i.subtotal), 0);
+      if (amountNum <= 0) throw new Error("Valor inválido para os itens selecionados.");
+
+      const total = parseFloat(note.total);
+      const alreadyPaid = parseFloat(note.paid_amount);
+      const remaining = Math.max(0, total - alreadyPaid);
+      if (amountNum > remaining + 0.005) {
+        throw new Error(`Valor dos itens selecionados maior que o saldo devedor (${remaining.toFixed(2)}).`);
+      }
+
+      await client.query(
+        `UPDATE customer_note_items SET paid = true WHERE id = ANY($1::int[])`,
+        [itemIds]
+      );
+
+      const newPaidNum = Math.min(total, alreadyPaid + amountNum);
+      const newPaid = newPaidNum.toFixed(2);
+      const newStatus = newPaidNum >= total - 0.005 ? "pago" : "parcial";
+
+      await client.query(
+        `UPDATE customer_notes
+         SET paid_amount = $1, status = $2, paid_at = CASE WHEN $2 = 'pago' THEN now() ELSE paid_at END
+         WHERE id = $3`,
+        [newPaid, newStatus, noteId]
+      );
+      await client.query(
+        `INSERT INTO customer_note_payments (note_id, amount, payment_method) VALUES ($1, $2, $3)`,
+        [noteId, amountNum.toFixed(2), paymentMethod]
+      );
+    });
+
+    const updated = await this.findById(noteId);
     if (!updated) throw new Error("Nota não encontrada após atualização.");
     return updated;
   }

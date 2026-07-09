@@ -8,7 +8,7 @@ import { CustomerNoteStatusBadge } from "@/components/customerNotes/CustomerNote
 import { RegisterPaymentForm } from "@/components/customerNotes/RegisterPaymentForm";
 import { DeleteNoteButton } from "@/components/customerNotes/DeleteNoteButton";
 import { AddNoteItemForm } from "@/components/customerNotes/AddNoteItemForm";
-import { RemoveNoteItemButton } from "@/components/customerNotes/RemoveNoteItemButton";
+import { NoteItemsTable } from "@/components/customerNotes/NoteItemsTable";
 import { PaymentMethodBadge } from "@/components/sales/PaymentMethodBadge";
 import { isAdmin } from "@/domain/entities/User";
 
@@ -80,36 +80,9 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
         </Link>
       )}
 
-      <div className="price-tag-card overflow-x-auto rounded-xl">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">Produto</th>
-              <th className="px-4 py-3 font-medium">Adicionado em</th>
-              <th className="px-4 py-3 font-medium text-right">Qtd.</th>
-              <th className="px-4 py-3 font-medium text-right">Preço unit.</th>
-              <th className="px-4 py-3 font-medium text-right">Subtotal</th>
-              {editable && <th className="px-4 py-3 font-medium text-right">-</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {note.items.map((item) => (
-              <tr key={item.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 text-text-primary">{item.product_name}</td>
-                <td className="px-4 py-3 text-text-secondary">{formatDateTime(item.created_at)}</td>
-                <td className="px-4 py-3 text-right font-numeric">{item.quantity}</td>
-                <td className="px-4 py-3 text-right font-numeric">{formatCurrency(item.unit_price)}</td>
-                <td className="px-4 py-3 text-right font-numeric">{formatCurrency(item.subtotal)}</td>
-                {editable && (
-                  <td className="px-4 py-3 text-right">
-                    <RemoveNoteItemButton noteId={note.id} itemId={item.id} />
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="flex flex-col items-end gap-1 border-t border-border p-4">
+      <div className="price-tag-card rounded-xl p-4">
+        <NoteItemsTable noteId={note.id} items={note.items} editable={editable} />
+        <div className="mt-4 flex flex-col items-end gap-1 border-t border-border pt-4">
           <div className="flex w-full max-w-xs justify-between text-sm text-text-secondary">
             <span>Total</span>
             <span className="font-numeric">{formatCurrency(note.total)}</span>
@@ -141,7 +114,9 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
 
       {editable && (
         <div className="price-tag-card rounded-xl p-6">
-          <h2 className="mb-4 font-display text-base font-semibold text-text-primary">Pagamento</h2>
+          <h2 className="mb-4 font-display text-base font-semibold text-text-primary">
+            Pagamento (valor livre, sem vincular a itens)
+          </h2>
           <RegisterPaymentForm noteId={note.id} remaining={remaining} />
         </div>
       )}

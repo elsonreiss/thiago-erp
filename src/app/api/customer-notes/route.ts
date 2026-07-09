@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
     user_id: user.id,
     description: body.description ?? null,
     items: (body.items ?? []).map((item) => ({
-      product_id: Number(item.product_id),
+      product_id: item.product_id ? Number(item.product_id) : null,
+      product_name: item.product_name ?? undefined,
       quantity: Number(item.quantity),
       unit_price: String(item.unit_price),
     })),
