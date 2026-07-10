@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Loader2, Trash2, X } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, Barcode, ImagePlus, Loader2, Trash2, X } from "lucide-react";
 import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_UNITS, Product } from "@/domain/entities/Product";
 import { Supplier } from "@/domain/entities/Supplier";
 import { resizeAndCompressImage } from "@/lib/image";
@@ -19,6 +20,10 @@ export function ProductForm({ product, initialSupplier }: { product?: Product; i
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [processingPhoto, setProcessingPhoto] = useState(false);
+  const [barcodeValue, setBarcodeValue] = useState(product?.barcode ?? "");
+  const [duplicate, setDuplicate] = useState<{ id: number; name: string; code: string } | null>(null);
+  const [checkingBarcode, setCheckingBarcode] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -32,6 +37,26 @@ export function ProductForm({ product, initialSupplier }: { product?: Product; i
     } finally {
       setProcessingPhoto(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function checkDuplicateBarcode(value: string) {
+    const trimmed = value.trim();
+    setDuplicate(null);
+    if (!trimmed) return;
+    setCheckingBarcode(true);
+    try {
+      const res = await fetch(`/api/products/lookup?code=${encodeURIComponent(trimmed)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const found = data.product;
+      if (found && found.id !== product?.id) {
+        setDuplicate({ id: found.id, name: found.name, code: found.code });
+      }
+    } catch {
+      // Sem conexão: não bloqueia o cadastro, só não avisa sobre duplicidade.
+    } finally {
+      setCheckingBarcode(false);
     }
   }
 
@@ -123,10 +148,42 @@ export function ProductForm({ product, initialSupplier }: { product?: Product; i
             <input name="code" required defaultValue={product?.code} className={inputClass} />
           </Field>
           <Field label="Código de barras">
-            <input name="barcode" defaultValue={product?.barcode ?? ""} className={inputClass} />
+            <div className="flex items-center gap-2">
+              <Barcode size={16} className="shrink-0 text-text-muted" />
+              <input
+                name="barcode"
+                value={barcodeValue}
+                onChange={(e) => {
+                  setBarcodeValue(e.target.value);
+                  setDuplicate(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    checkDuplicateBarcode(e.currentTarget.value);
+                    nameInputRef.current?.focus();
+                  }
+                }}
+                onBlur={(e) => checkDuplicateBarcode(e.target.value)}
+                placeholder="Escaneie ou digite o código de barras..."
+                className={inputClass}
+              />
+              {checkingBarcode && <Loader2 size={14} className="shrink-0 animate-spin text-text-muted" />}
+            </div>
+            {duplicate && (
+              <p className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning">
+                <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                <span>
+                  Já existe um produto com esse código: <strong>{duplicate.name}</strong> ({duplicate.code}).{" "}
+                  <Link href={`/estoque/${duplicate.id}`} className="underline hover:opacity-80">
+                    Ver produto
+                  </Link>
+                </span>
+              </p>
+            )}
           </Field>
           <Field label="Nome *" className="sm:col-span-2 lg:col-span-1">
-            <input name="name" required defaultValue={product?.name} className={inputClass} />
+            <input ref={nameInputRef} name="name" required defaultValue={product?.name} className={inputClass} />
           </Field>
           <Field label="Categoria *">
             <select name="category" required defaultValue={product?.category ?? DEFAULT_PRODUCT_CATEGORIES[0]} className={inputClass}>
