@@ -211,6 +211,21 @@ const STATEMENTS: string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_customer_note_payments_note_id ON customer_note_payments(note_id)`,
 
+  `CREATE TABLE IF NOT EXISTS cash_closings (
+    id SERIAL PRIMARY KEY,
+    closing_date DATE NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    opening_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+    sales_cash NUMERIC(12,2) NOT NULL DEFAULT 0,
+    expected_total NUMERIC(12,2) NOT NULL DEFAULT 0,
+    counted_cash NUMERIC(12,2) NOT NULL DEFAULT 0,
+    difference NUMERIC(12,2) NOT NULL DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_cash_closings_date ON cash_closings(closing_date)`,
+
   `CREATE TABLE IF NOT EXISTS expenses (
     id SERIAL PRIMARY KEY,
     description TEXT NOT NULL,

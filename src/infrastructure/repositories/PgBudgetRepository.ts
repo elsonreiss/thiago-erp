@@ -4,6 +4,7 @@ import {
   CreateBudgetInput,
   BudgetRepository,
 } from "@/domain/repositories/BudgetRepository";
+import { PaginatedResult, buildPaginatedResult } from "@/lib/pagination";
 
 type RawBudgetRow = Budget & { customer_name: string | null; seller_name: string };
 
@@ -55,6 +56,32 @@ export class PgBudgetRepository implements BudgetRepository {
 
     const itemsByBudget = await loadItems(rows.map((r) => r.id));
     return rows.map((row) => ({ ...row, items: itemsByBudget.get(row.id) ?? [] }));
+  }
+
+  async findPage(
+    status: BudgetStatus | undefined,
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResult<BudgetWithItems>> {
+    const where = status ? `WHERE b.status = $1` : "";
+    const values: unknown[] = status ? [status] : [];
+    const offset = (page - 1) * pageSize;
+
+    const { rows: countRows } = await query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM budgets b ${where}`,
+      values
+    );
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const { rows } = await query<RawBudgetRow>(
+      `${BUDGET_SELECT} ${where} ORDER BY b.created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, pageSize, offset]
+    );
+    if (rows.length === 0) return buildPaginatedResult([], total, page, pageSize);
+
+    const itemsByBudget = await loadItems(rows.map((r) => r.id));
+    const items = rows.map((row) => ({ ...row, items: itemsByBudget.get(row.id) ?? [] }));
+    return buildPaginatedResult(items, total, page, pageSize);
   }
 
   async create(input: CreateBudgetInput): Promise<BudgetWithItems> {

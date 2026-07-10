@@ -1,11 +1,41 @@
 import { PoolClient } from "pg";
 import { query, withTransaction } from "@/infrastructure/db";
-import { Sale, SaleWithItems, SaleItem } from "@/domain/entities/Sale";
+import { Sale, SaleWithItems, SaleItem, PaymentMethod } from "@/domain/entities/Sale";
 import {
   CreateSaleInput,
   SaleFilters,
   SaleRepository,
 } from "@/domain/repositories/SaleRepository";
+import { PaginatedResult, buildPaginatedResult } from "@/lib/pagination";
+
+function buildSaleWhere(filters: SaleFilters): { where: string; values: unknown[] } {
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+  let i = 1;
+
+  if (filters.from) {
+    conditions.push(`s.created_at >= $${i}`);
+    values.push(filters.from);
+    i++;
+  }
+  if (filters.to) {
+    conditions.push(`s.created_at <= $${i}`);
+    values.push(filters.to);
+    i++;
+  }
+  if (filters.userId) {
+    conditions.push(`s.user_id = $${i}`);
+    values.push(filters.userId);
+    i++;
+  }
+  if (filters.customerId) {
+    conditions.push(`s.customer_id = $${i}`);
+    values.push(filters.customerId);
+    i++;
+  }
+
+  return { where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "", values };
+}
 
 type RawSaleRow = Sale & { customer_name: string | null; seller_name: string };
 
@@ -83,6 +113,38 @@ export class PgSaleRepository implements SaleRepository {
     }
 
     return rows.map((row) => ({ ...row, items: itemsBySale.get(row.id) ?? [] }));
+  }
+
+  async findPage(filters: SaleFilters, page: number, pageSize: number): Promise<PaginatedResult<SaleWithItems>> {
+    const { where, values } = buildSaleWhere(filters);
+    const offset = (page - 1) * pageSize;
+
+    const { rows: countRows } = await query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM sales s ${where}`,
+      values
+    );
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const { rows } = await query<RawSaleRow>(
+      `${SALE_SELECT} ${where} ORDER BY s.created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, pageSize, offset]
+    );
+    if (rows.length === 0) return buildPaginatedResult([], total, page, pageSize);
+
+    const ids = rows.map((r) => r.id);
+    const { rows: allItems } = await query<SaleItem>(
+      `SELECT * FROM sale_items WHERE sale_id = ANY($1::int[]) ORDER BY id ASC`,
+      [ids]
+    );
+    const itemsBySale = new Map<number, SaleItem[]>();
+    for (const item of allItems) {
+      const list = itemsBySale.get(item.sale_id) ?? [];
+      list.push(item);
+      itemsBySale.set(item.sale_id, list);
+    }
+
+    const items = rows.map((row) => ({ ...row, items: itemsBySale.get(row.id) ?? [] }));
+    return buildPaginatedResult(items, total, page, pageSize);
   }
 
   async create(input: CreateSaleInput): Promise<SaleWithItems> {
@@ -229,6 +291,24 @@ export class PgSaleRepository implements SaleRepository {
       [from, to]
     );
     return rows.map((r) => ({ month: r.month, total: Number(r.total) }));
+  }
+
+  async revenueByPaymentMethodForDay(
+    date: string
+  ): Promise<Array<{ payment_method: PaymentMethod; total: number; count: number }>> {
+    const { rows } = await query<{ payment_method: PaymentMethod; total: string; count: string }>(
+      `SELECT payment_method, COALESCE(SUM(total), 0)::text AS total, COUNT(*)::text AS count
+       FROM sales
+       WHERE created_at::date = $1::date
+       GROUP BY payment_method
+       ORDER BY payment_method ASC`,
+      [date]
+    );
+    return rows.map((r) => ({
+      payment_method: r.payment_method,
+      total: Number(r.total),
+      count: Number(r.count),
+    }));
   }
 
   async delete(id: number): Promise<void> {

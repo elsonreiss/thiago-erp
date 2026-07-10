@@ -5,20 +5,25 @@ import { container } from "@/container";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { CustomerNoteStatusBadge } from "@/components/customerNotes/CustomerNoteStatusBadge";
 import { CustomerNoteStatus } from "@/domain/entities/CustomerNote";
+import { Pagination } from "@/components/ui/Pagination";
+import { DEFAULT_PAGE_SIZE, parsePage } from "@/lib/pagination";
 
 interface SearchParams {
   status?: string;
+  page?: string;
 }
 
 export default async function NotasClientesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await requireUser();
   const params = await searchParams;
   const status = (params.status as CustomerNoteStatus) || undefined;
+  const page = parsePage(params.page);
 
-  const [notes, openBalances] = await Promise.all([
-    container.customerNoteRepository.findAll({ status }),
+  const [notePage, openBalances] = await Promise.all([
+    container.customerNoteRepository.findPage({ status }, page, DEFAULT_PAGE_SIZE),
     container.customerNoteRepository.openBalanceByCustomer(),
   ]);
+  const notes = notePage.items;
 
   return (
     <div className="flex flex-col gap-6">
@@ -144,6 +149,13 @@ export default async function NotasClientesPage({ searchParams }: { searchParams
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={notePage.page}
+          totalPages={notePage.totalPages}
+          total={notePage.total}
+          basePath="/notas-clientes"
+          searchParams={{ status: params.status }}
+        />
       </div>
     </div>
   );

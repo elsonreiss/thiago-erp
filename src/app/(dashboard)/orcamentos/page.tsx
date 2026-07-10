@@ -5,17 +5,22 @@ import { container } from "@/container";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { BudgetStatusBadge } from "@/components/budgets/BudgetStatusBadge";
 import { BudgetStatus } from "@/domain/entities/Budget";
+import { Pagination } from "@/components/ui/Pagination";
+import { DEFAULT_PAGE_SIZE, parsePage } from "@/lib/pagination";
 
 interface SearchParams {
   status?: string;
+  page?: string;
 }
 
 export default async function OrcamentosPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await requireUser();
   const params = await searchParams;
   const status = (params.status as BudgetStatus) || undefined;
+  const page = parsePage(params.page);
 
-  const budgets = await container.budgetRepository.findAll(status);
+  const budgetPage = await container.budgetRepository.findPage(status, page, DEFAULT_PAGE_SIZE);
+  const budgets = budgetPage.items;
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,6 +116,13 @@ export default async function OrcamentosPage({ searchParams }: { searchParams: P
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={budgetPage.page}
+          totalPages={budgetPage.totalPages}
+          total={budgetPage.total}
+          basePath="/orcamentos"
+          searchParams={{ status: params.status }}
+        />
       </div>
     </div>
   );

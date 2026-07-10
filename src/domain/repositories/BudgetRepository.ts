@@ -1,4 +1,5 @@
 import { BudgetStatus, BudgetWithItems } from "@/domain/entities/Budget";
+import { PaginatedResult } from "@/lib/pagination";
 
 export interface CreateBudgetItemInput {
   product_id: number;
@@ -18,6 +19,7 @@ export interface CreateBudgetInput {
 export interface BudgetRepository {
   findById(id: number): Promise<BudgetWithItems | null>;
   findAll(status?: BudgetStatus): Promise<BudgetWithItems[]>;
+  findPage(status: BudgetStatus | undefined, page: number, pageSize: number): Promise<PaginatedResult<BudgetWithItems>>;
   create(input: CreateBudgetInput): Promise<BudgetWithItems>;
   updateStatus(id: number, status: BudgetStatus): Promise<BudgetWithItems | null>;
   markConverted(id: number, saleId: number): Promise<void>;

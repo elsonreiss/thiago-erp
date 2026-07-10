@@ -6,6 +6,36 @@ import {
   ProductRepository,
   UpdateProductInput,
 } from "@/domain/repositories/ProductRepository";
+import { PaginatedResult, buildPaginatedResult } from "@/lib/pagination";
+
+function buildProductWhere(filters: ProductFilters): { where: string; values: unknown[] } {
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+  let i = 1;
+
+  if (filters.activeOnly !== false) {
+    conditions.push(`active = true`);
+  }
+  if (filters.search && filters.search.trim()) {
+    conditions.push(`(name ILIKE $${i} OR code ILIKE $${i} OR barcode ILIKE $${i} OR category ILIKE $${i})`);
+    values.push(`%${filters.search.trim()}%`);
+    i++;
+  }
+  if (filters.category && filters.category.trim()) {
+    conditions.push(`category = $${i}`);
+    values.push(filters.category);
+    i++;
+  }
+  if (filters.stockStatus === "em_falta") {
+    conditions.push(`quantity <= 0`);
+  } else if (filters.stockStatus === "estoque_baixo") {
+    conditions.push(`quantity > 0 AND quantity <= min_stock`);
+  } else if (filters.stockStatus === "ok") {
+    conditions.push(`quantity > min_stock`);
+  }
+
+  return { where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "", values };
+}
 
 export class PgProductRepository implements ProductRepository {
   async findById(id: number): Promise<Product | null> {
@@ -55,6 +85,24 @@ export class PgProductRepository implements ProductRepository {
       values
     );
     return rows;
+  }
+
+  async findPage(filters: ProductFilters, page: number, pageSize: number): Promise<PaginatedResult<Product>> {
+    const { where, values } = buildProductWhere(filters);
+    const offset = (page - 1) * pageSize;
+
+    const { rows: countRows } = await query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM products ${where}`,
+      values
+    );
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const { rows } = await query<Product>(
+      `SELECT * FROM products ${where} ORDER BY name ASC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, pageSize, offset]
+    );
+
+    return buildPaginatedResult(rows, total, page, pageSize);
   }
 
   async searchForAutocomplete(term: string, limit = 10): Promise<Product[]> {

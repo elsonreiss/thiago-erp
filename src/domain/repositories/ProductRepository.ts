@@ -1,4 +1,5 @@
 import { Product } from "@/domain/entities/Product";
+import { PaginatedResult } from "@/lib/pagination";
 
 export interface CreateProductInput {
   code: string;
@@ -30,6 +31,7 @@ export interface ProductRepository {
   findById(id: number): Promise<Product | null>;
   findByCode(code: string): Promise<Product | null>;
   findAll(filters?: ProductFilters): Promise<Product[]>;
+  findPage(filters: ProductFilters, page: number, pageSize: number): Promise<PaginatedResult<Product>>;
   searchForAutocomplete(query: string, limit?: number): Promise<Product[]>;
   create(input: CreateProductInput): Promise<Product>;
   update(id: number, input: UpdateProductInput): Promise<Product | null>;

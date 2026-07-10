@@ -1,4 +1,5 @@
-import { ArrowDownCircle, ArrowUpCircle, TrendingUp, Wallet } from "lucide-react";
+import Link from "next/link";
+import { ArrowDownCircle, ArrowUpCircle, ClipboardCheck, TrendingUp, Wallet } from "lucide-react";
 import { requireFinancialAccess } from "@/lib/auth";
 import { container } from "@/container";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -55,9 +56,17 @@ export default async function FinanceiroPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-2xl font-semibold text-text-primary">Financeiro</h1>
-        <p className="text-sm text-text-secondary">Receitas, despesas e fluxo de caixa do mês.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-semibold text-text-primary">Financeiro</h1>
+          <p className="text-sm text-text-secondary">Receitas, despesas e fluxo de caixa do mês.</p>
+        </div>
+        <Link
+          href="/caixa"
+          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-secondary"
+        >
+          <ClipboardCheck size={16} /> Fechamento de caixa
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

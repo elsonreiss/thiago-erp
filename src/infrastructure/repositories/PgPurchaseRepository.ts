@@ -5,6 +5,7 @@ import {
   CreatePurchaseInput,
   PurchaseRepository,
 } from "@/domain/repositories/PurchaseRepository";
+import { PaginatedResult, buildPaginatedResult } from "@/lib/pagination";
 
 type RawPurchaseRow = Purchase & { supplier_name: string | null };
 
@@ -53,6 +54,34 @@ export class PgPurchaseRepository implements PurchaseRepository {
     }
 
     return rows.map((row) => ({ ...row, items: itemsByPurchase.get(row.id) ?? [] }));
+  }
+
+  async findPage(page: number, pageSize: number): Promise<PaginatedResult<PurchaseWithItems>> {
+    const offset = (page - 1) * pageSize;
+
+    const { rows: countRows } = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM purchases`);
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const { rows } = await query<RawPurchaseRow>(
+      `${PURCHASE_SELECT} ORDER BY p.created_at DESC LIMIT $1 OFFSET $2`,
+      [pageSize, offset]
+    );
+    if (rows.length === 0) return buildPaginatedResult([], total, page, pageSize);
+
+    const ids = rows.map((r) => r.id);
+    const { rows: allItems } = await query<PurchaseItem>(
+      `SELECT * FROM purchase_items WHERE purchase_id = ANY($1::int[]) ORDER BY id ASC`,
+      [ids]
+    );
+    const itemsByPurchase = new Map<number, PurchaseItem[]>();
+    for (const item of allItems) {
+      const list = itemsByPurchase.get(item.purchase_id) ?? [];
+      list.push(item);
+      itemsByPurchase.set(item.purchase_id, list);
+    }
+
+    const items = rows.map((row) => ({ ...row, items: itemsByPurchase.get(row.id) ?? [] }));
+    return buildPaginatedResult(items, total, page, pageSize);
   }
 
   async create(input: CreatePurchaseInput): Promise<PurchaseWithItems> {

@@ -1,4 +1,5 @@
 import { PaymentMethod, SaleWithItems } from "@/domain/entities/Sale";
+import { PaginatedResult } from "@/lib/pagination";
 
 export interface CreateSaleItemInput {
   /** Null quando é um item avulso (digitado na hora, sem produto cadastrado no estoque). */
@@ -30,6 +31,7 @@ export interface SaleFilters {
 export interface SaleRepository {
   findById(id: number): Promise<SaleWithItems | null>;
   findAll(filters?: SaleFilters): Promise<SaleWithItems[]>;
+  findPage(filters: SaleFilters, page: number, pageSize: number): Promise<PaginatedResult<SaleWithItems>>;
   create(input: CreateSaleInput): Promise<SaleWithItems>;
   recent(limit: number): Promise<SaleWithItems[]>;
   totalRevenue(from: string, to: string, userId?: number): Promise<number>;
@@ -37,5 +39,9 @@ export interface SaleRepository {
   revenueByDay(from: string, to: string): Promise<Array<{ day: string; total: number }>>;
   revenueBySeller(from: string, to: string): Promise<Array<{ user_id: number; seller_name: string; total: number; count: number }>>;
   revenueByMonth(from: string, to: string): Promise<Array<{ month: string; total: number }>>;
+  /** Total vendido em cada forma de pagamento num dia específico (pra conferência de caixa). */
+  revenueByPaymentMethodForDay(
+    date: string
+  ): Promise<Array<{ payment_method: PaymentMethod; total: number; count: number }>>;
   delete(id: number): Promise<void>;
 }

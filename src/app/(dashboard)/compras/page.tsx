@@ -3,14 +3,25 @@ import { Eye, Plus, Truck } from "lucide-react";
 import { requireUser, currentUserCanViewFinancials } from "@/lib/auth";
 import { container } from "@/container";
 import { formatCurrency, formatDateTime } from "@/lib/format";
+import { Pagination } from "@/components/ui/Pagination";
+import { DEFAULT_PAGE_SIZE, parsePage } from "@/lib/pagination";
 
-export default async function ComprasPage() {
+interface SearchParams {
+  page?: string;
+}
+
+export default async function ComprasPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await requireUser();
   const canSeeFinancials = await currentUserCanViewFinancials();
+  const params = await searchParams;
+  const page = parsePage(params.page);
 
-  const purchases = await container.purchaseRepository.findAll();
-  const totalCount = purchases.length;
-  const totalSpent = purchases.reduce((sum, p) => sum + parseFloat(p.total), 0);
+  const [purchasePage, totalSpent] = await Promise.all([
+    container.purchaseRepository.findPage(page, DEFAULT_PAGE_SIZE),
+    container.purchaseRepository.totalSpent("1970-01-01", "2999-12-31"),
+  ]);
+  const purchases = purchasePage.items;
+  const totalCount = purchasePage.total;
 
   return (
     <div className="flex flex-col gap-6">
@@ -90,6 +101,13 @@ export default async function ComprasPage() {
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={purchasePage.page}
+          totalPages={purchasePage.totalPages}
+          total={purchasePage.total}
+          basePath="/compras"
+          searchParams={{}}
+        />
       </div>
     </div>
   );

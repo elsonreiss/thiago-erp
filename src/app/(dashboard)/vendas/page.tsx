@@ -6,17 +6,21 @@ import { formatCurrency, formatDateTime } from "@/lib/format";
 import { PaymentMethodBadge } from "@/components/sales/PaymentMethodBadge";
 import { canViewFinancials, isAdmin } from "@/domain/entities/User";
 import { DeleteButton } from "@/components/ui/DeleteButton";
+import { Pagination } from "@/components/ui/Pagination";
+import { DEFAULT_PAGE_SIZE, parsePage } from "@/lib/pagination";
 
 interface SearchParams {
   userId?: string;
   from?: string;
   to?: string;
+  page?: string;
 }
 
 export default async function VendasPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requireUser();
   const params = await searchParams;
   const canSeeFinancials = await currentUserCanViewFinancials();
+  const page = parsePage(params.page);
 
   const now = new Date();
   const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
@@ -25,22 +29,25 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
 
   const userIdFilter = canSeeFinancials && params.userId ? Number(params.userId) : undefined;
 
-  const [sales, sellers, revenueBySeller] = await Promise.all([
-    container.saleRepository.findAll({
-      from: `${from} 00:00:00`,
-      to: `${to} 23:59:59`,
-      userId: canViewFinancials(user.role) ? userIdFilter : user.id,
-    }),
+  const saleFilters = {
+    from: `${from} 00:00:00`,
+    to: `${to} 23:59:59`,
+    userId: canViewFinancials(user.role) ? userIdFilter : user.id,
+  };
+
+  const [salePage, sellers, revenueBySeller, totalRevenue] = await Promise.all([
+    container.saleRepository.findPage(saleFilters, page, DEFAULT_PAGE_SIZE),
     canSeeFinancials
       ? container.userRepository.findAll().then((users) => users.filter((u) => u.active))
       : Promise.resolve([]),
     canSeeFinancials
       ? container.saleRepository.revenueBySeller(`${from} 00:00:00`, `${to} 23:59:59`)
       : Promise.resolve([]),
+    // Faturamento do período inteiro (não só da página atual).
+    container.saleRepository.totalRevenue(saleFilters.from, saleFilters.to, saleFilters.userId),
   ]);
-
-  const totalRevenue = sales.reduce((sum, s) => sum + parseFloat(s.total), 0);
-  const totalCount = sales.length;
+  const sales = salePage.items;
+  const totalCount = salePage.total;
 
   return (
     <div className="flex flex-col gap-6">
@@ -195,6 +202,13 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={salePage.page}
+          totalPages={salePage.totalPages}
+          total={salePage.total}
+          basePath="/vendas"
+          searchParams={{ from: params.from, to: params.to, userId: params.userId }}
+        />
       </div>
     </div>
   );

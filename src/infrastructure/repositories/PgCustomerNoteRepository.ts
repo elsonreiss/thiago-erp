@@ -14,6 +14,26 @@ import {
   CustomerNoteRepository,
   OpenBalanceRow,
 } from "@/domain/repositories/CustomerNoteRepository";
+import { PaginatedResult, buildPaginatedResult } from "@/lib/pagination";
+
+function buildNoteWhere(filters: CustomerNoteFilters): { where: string; values: unknown[] } {
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+  let i = 1;
+
+  if (filters.customerId) {
+    conditions.push(`n.customer_id = $${i}`);
+    values.push(filters.customerId);
+    i++;
+  }
+  if (filters.status) {
+    conditions.push(`n.status = $${i}`);
+    values.push(filters.status);
+    i++;
+  }
+
+  return { where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "", values };
+}
 
 type RawNoteRow = CustomerNote & { customer_name: string; seller_name: string };
 
@@ -129,6 +149,36 @@ export class PgCustomerNoteRepository implements CustomerNoteRepository {
       items: itemsByNote.get(row.id) ?? [],
       payments: paymentsByNote.get(row.id) ?? [],
     }));
+  }
+
+  async findPage(
+    filters: CustomerNoteFilters,
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResult<CustomerNoteWithItems>> {
+    const { where, values } = buildNoteWhere(filters);
+    const offset = (page - 1) * pageSize;
+
+    const { rows: countRows } = await query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM customer_notes n ${where}`,
+      values
+    );
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const { rows } = await query<RawNoteRow>(
+      `${NOTE_SELECT} ${where} ORDER BY n.created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, pageSize, offset]
+    );
+    if (rows.length === 0) return buildPaginatedResult([], total, page, pageSize);
+
+    const ids = rows.map((r) => r.id);
+    const { itemsByNote, paymentsByNote } = await loadItemsAndPayments(ids);
+    const items = rows.map((row) => ({
+      ...row,
+      items: itemsByNote.get(row.id) ?? [],
+      payments: paymentsByNote.get(row.id) ?? [],
+    }));
+    return buildPaginatedResult(items, total, page, pageSize);
   }
 
   async create(input: CreateCustomerNoteInput): Promise<CustomerNoteWithItems> {

@@ -1,4 +1,5 @@
 import { PurchaseWithItems } from "@/domain/entities/Purchase";
+import { PaginatedResult } from "@/lib/pagination";
 
 export interface CreatePurchaseItemInput {
   product_id: number;
@@ -16,6 +17,7 @@ export interface CreatePurchaseInput {
 export interface PurchaseRepository {
   findById(id: number): Promise<PurchaseWithItems | null>;
   findAll(): Promise<PurchaseWithItems[]>;
+  findPage(page: number, pageSize: number): Promise<PaginatedResult<PurchaseWithItems>>;
   create(input: CreatePurchaseInput): Promise<PurchaseWithItems>;
   totalSpent(from: string, to: string): Promise<number>;
 }

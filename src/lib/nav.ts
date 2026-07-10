@@ -7,6 +7,7 @@ import {
   PackagePlus,
   FileText,
   NotebookText,
+  ClipboardCheck,
   Wallet,
   BarChart3,
   Settings,
@@ -31,6 +32,12 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/compras", label: "Compras", icon: PackagePlus },
   { href: "/orcamentos", label: "Orçamentos", icon: FileText },
   { href: "/notas-clientes", label: "Notas de clientes", icon: NotebookText },
+  {
+    href: "/caixa",
+    label: "Caixa",
+    icon: ClipboardCheck,
+    visible: canViewFinancials,
+  },
   {
     href: "/financeiro",
     label: "Financeiro",

@@ -6,27 +6,36 @@ import { DEFAULT_PRODUCT_CATEGORIES, getStockStatus, ProductStockStatus } from "
 import { formatCurrency } from "@/lib/format";
 import { ProductStatusBadge } from "@/components/products/ProductStatusBadge";
 import { DeleteProductButton } from "@/components/products/DeleteProductButton";
+import { Pagination } from "@/components/ui/Pagination";
+import { DEFAULT_PAGE_SIZE, parsePage } from "@/lib/pagination";
 
 interface SearchParams {
   search?: string;
   category?: string;
   stockStatus?: string;
+  page?: string;
 }
 
 export default async function EstoquePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await requireUser();
   const params = await searchParams;
+  const page = parsePage(params.page);
 
-  const [products, total, outOfStock, lowStock] = await Promise.all([
-    container.productRepository.findAll({
-      search: params.search,
-      category: params.category,
-      stockStatus: (params.stockStatus as ProductStockStatus) || undefined,
-    }),
+  const [productPage, total, outOfStock, lowStock] = await Promise.all([
+    container.productRepository.findPage(
+      {
+        search: params.search,
+        category: params.category,
+        stockStatus: (params.stockStatus as ProductStockStatus) || undefined,
+      },
+      page,
+      DEFAULT_PAGE_SIZE
+    ),
     container.productRepository.countTotal(),
     container.productRepository.countOutOfStock(),
     container.productRepository.countLowStock(),
   ]);
+  const products = productPage.items;
 
   return (
     <div className="flex flex-col gap-6">
@@ -166,6 +175,13 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={productPage.page}
+          totalPages={productPage.totalPages}
+          total={productPage.total}
+          basePath="/estoque"
+          searchParams={{ search: params.search, category: params.category, stockStatus: params.stockStatus }}
+        />
       </div>
     </div>
   );

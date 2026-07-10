@@ -1,5 +1,6 @@
 import { PaymentMethod } from "@/domain/entities/Sale";
 import { CustomerNoteStatus, CustomerNoteWithItems } from "@/domain/entities/CustomerNote";
+import { PaginatedResult } from "@/lib/pagination";
 
 export interface CreateCustomerNoteItemInput {
   /** Null quando é um item avulso (digitado na hora, sem produto cadastrado no estoque). */
@@ -32,6 +33,7 @@ export interface OpenBalanceRow {
 export interface CustomerNoteRepository {
   findById(id: number): Promise<CustomerNoteWithItems | null>;
   findAll(filters?: CustomerNoteFilters): Promise<CustomerNoteWithItems[]>;
+  findPage(filters: CustomerNoteFilters, page: number, pageSize: number): Promise<PaginatedResult<CustomerNoteWithItems>>;
   create(input: CreateCustomerNoteInput): Promise<CustomerNoteWithItems>;
   /** Adiciona um item a uma nota já existente (nova compra na mesma nota), com baixa de estoque e timestamp próprio. */
   addItem(noteId: number, item: CreateCustomerNoteItemInput): Promise<CustomerNoteWithItems>;
