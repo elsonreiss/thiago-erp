@@ -1,0 +1,17 @@
+<svg width="800" height="700" viewBox="0 0 800 700" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="700" fill="#F4791D"/>
+  <g transform="translate(220,50) scale(3.6)">
+    <path
+      fill="#171310"
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M50 8L94 46.5H84.5L50 17.5L28 36.5V22H20V43L15.5 46.5H6L50 8Z"
+    />
+    <path
+      fill="#171310"
+      d="M4 62C16 51 32 45.5 50 45.5C68 45.5 84 51 96 62L94.5 65.5C82 55.5 66.5 50.5 50 50.5C33.5 50.5 18 55.5 5.5 65.5L4 62Z"
+    />
+  </g>
+  <text x="400" y="470" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="120" fill="#171310" letter-spacing="2">THIAGO</text>
+  <text x="400" y="530" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="34" fill="#3A160C" letter-spacing="9">CASA &amp; CONSTRUÇÃO</text>
+</svg>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
 import { container } from "@/container";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { PrintButton } from "@/components/budgets/PrintButton";
@@ -29,9 +30,12 @@ export default async function ImprimirOrcamentoPage({ params }: Params) {
 
       <div className="rounded-xl border border-border bg-surface p-8 print:border-none print:p-0 print:shadow-none">
         <div className="mb-6 flex items-start justify-between border-b border-border pb-6">
-          <div>
-            <p className="font-display text-lg font-bold text-text-primary">Thiago Casa &amp; Construção</p>
-            <p className="text-sm text-text-secondary">Orçamento</p>
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-contain" />
+            <div>
+              <p className="font-display text-lg font-bold text-text-primary">Thiago Casa &amp; Construção</p>
+              <p className="text-sm text-text-secondary">Orçamento</p>
+            </div>
           </div>
           <div className="text-right">
             <p className="text-xs text-text-muted">Emitido em</p>
