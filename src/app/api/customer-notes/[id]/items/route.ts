@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { container } from "@/container";
 import { AddNoteItem, CustomerNoteItemValidationError } from "@/application/use-cases/customerNotes/AddNoteItem";
+import { CreditLimitExceededError } from "@/application/use-cases/customerNotes/CreateCustomerNote";
 import { CreateCustomerNoteItemInput } from "@/domain/repositories/CustomerNoteRepository";
 
 type Params = { params: Promise<{ id: string }> };
@@ -24,12 +25,16 @@ export async function POST(request: NextRequest, { params }: Params) {
     quantity: Number(body.quantity),
     unit_price: String(body.unit_price),
   };
+  const overrideLimit = Boolean((body as { override_limit?: boolean }).override_limit);
 
-  const useCase = new AddNoteItem(container.customerNoteRepository);
+  const useCase = new AddNoteItem(container.customerNoteRepository, container.customerRepository);
   try {
-    const note = await useCase.execute(Number(id), input);
+    const note = await useCase.execute(Number(id), input, overrideLimit);
     return NextResponse.json({ note }, { status: 201 });
   } catch (err) {
+    if (err instanceof CreditLimitExceededError) {
+      return NextResponse.json({ error: err.message, code: "CREDIT_LIMIT_EXCEEDED" }, { status: 409 });
+    }
     if (err instanceof CustomerNoteItemValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }

@@ -48,6 +48,17 @@ export class PgProductRepository implements ProductRepository {
     return rows[0] ?? null;
   }
 
+  async findByCodeOrBarcode(value: string): Promise<Product | null> {
+    const { rows } = await query<Product>(
+      `SELECT * FROM products
+       WHERE active = true AND (lower(code) = lower($1) OR lower(barcode) = lower($1))
+       ORDER BY (lower(code) = lower($1)) DESC
+       LIMIT 1`,
+      [value]
+    );
+    return rows[0] ?? null;
+  }
+
   async findAll(filters: ProductFilters = {}): Promise<Product[]> {
     const conditions: string[] = [];
     const values: unknown[] = [];

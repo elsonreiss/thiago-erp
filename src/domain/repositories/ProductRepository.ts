@@ -30,6 +30,8 @@ export interface ProductFilters {
 export interface ProductRepository {
   findById(id: number): Promise<Product | null>;
   findByCode(code: string): Promise<Product | null>;
+  /** Busca exata por código interno OU código de barras — usado pelo leitor de código de barras na venda. */
+  findByCodeOrBarcode(value: string): Promise<Product | null>;
   findAll(filters?: ProductFilters): Promise<Product[]>;
   findPage(filters: ProductFilters, page: number, pageSize: number): Promise<PaginatedResult<Product>>;
   searchForAutocomplete(query: string, limit?: number): Promise<Product[]>;

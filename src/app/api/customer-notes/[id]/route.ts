@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { container } from "@/container";
 import { isAdmin } from "@/domain/entities/User";
+import { logAudit } from "@/lib/auditLog";
 import {
   DeleteCustomerNote,
   CustomerNoteNotFoundError,
@@ -29,9 +30,19 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   }
   const { id } = await params;
 
+  const existing = await container.customerNoteRepository.findById(Number(id));
+
   const useCase = new DeleteCustomerNote(container.customerNoteRepository);
   try {
     await useCase.execute(Number(id));
+    await logAudit({
+      userId: user.id,
+      userName: user.name,
+      action: "delete",
+      entityType: "customer_note",
+      entityId: Number(id),
+      details: existing ? `Nota de fiado excluída (cliente: ${existing.customer_name}, total: ${existing.total})` : null,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof CustomerNoteNotFoundError) {

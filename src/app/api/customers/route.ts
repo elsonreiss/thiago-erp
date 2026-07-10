@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     city: body.city ?? null,
     state: body.state ?? null,
     notes: body.notes ?? null,
+    credit_limit: body.credit_limit ?? null,
   };
 
   const useCase = new CreateCustomer(container.customerRepository);

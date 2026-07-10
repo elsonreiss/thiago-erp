@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, PackagePlus, ShoppingCart, Trash2, User, X } from "lucide-react";
+import { Barcode, Loader2, PackagePlus, ShoppingCart, Trash2, User, X } from "lucide-react";
 import { Product } from "@/domain/entities/Product";
 import { Customer } from "@/domain/entities/Customer";
 import { PaymentMethod } from "@/domain/entities/Sale";
@@ -30,6 +30,10 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanValue, setScanValue] = useState("");
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const scanInputRef = useRef<HTMLInputElement>(null);
 
   const subtotal = useMemo(
     () => lines.reduce((sum, line) => sum + parseFloat(line.unit_price || "0") * line.quantity, 0),
@@ -71,6 +75,28 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
       },
     ]);
     setShowManual(false);
+  }
+
+  async function handleScan(code: string) {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    setScanError(null);
+    setScanning(true);
+    try {
+      const res = await fetch(`/api/products/lookup?code=${encodeURIComponent(trimmed)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setScanError(data.error ?? "Produto não encontrado.");
+        return;
+      }
+      addProduct(data.product);
+      setScanValue("");
+    } catch {
+      setScanError("Erro de conexão ao buscar produto.");
+    } finally {
+      setScanning(false);
+      scanInputRef.current?.focus();
+    }
   }
 
   function updateLine(key: string, patch: Partial<CartLine>) {
@@ -179,6 +205,31 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
           >
             <PackagePlus size={14} /> Item avulso (sem cadastro)
           </button>
+        </div>
+
+        <div className="mb-3 flex flex-col gap-1.5">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+            <Barcode size={14} /> Leitor de código de barras
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              ref={scanInputRef}
+              type="text"
+              autoFocus
+              value={scanValue}
+              onChange={(e) => setScanValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleScan(scanValue);
+                }
+              }}
+              placeholder="Escaneie ou digite o código e aperte Enter..."
+              className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm font-numeric text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+            {scanning && <Loader2 size={16} className="animate-spin text-text-muted" />}
+          </div>
+          {scanError && <p className="text-xs text-danger">{scanError}</p>}
         </div>
 
         <Autocomplete<Product>

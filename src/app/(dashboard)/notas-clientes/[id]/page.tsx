@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Receipt, ShoppingCart } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { container } from "@/container";
-import { formatCurrency, formatDateTime } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { CustomerNoteStatusBadge } from "@/components/customerNotes/CustomerNoteStatusBadge";
+import { OverdueBadge } from "@/components/customerNotes/OverdueBadge";
+import { isNoteOverdue } from "@/lib/customerNoteOverdue";
 import { RegisterPaymentForm } from "@/components/customerNotes/RegisterPaymentForm";
 import { DeleteNoteButton } from "@/components/customerNotes/DeleteNoteButton";
 import { AddNoteItemForm } from "@/components/customerNotes/AddNoteItemForm";
@@ -50,7 +52,7 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
         <div className="price-tag-card rounded-xl p-5">
           <p className="text-xs text-text-muted">Cliente</p>
           <p className="mt-1 font-medium text-text-primary">{note.customer_name}</p>
@@ -61,9 +63,14 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
         </div>
         <div className="price-tag-card rounded-xl p-5">
           <p className="text-xs text-text-muted">Status</p>
-          <div className="mt-1.5">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <CustomerNoteStatusBadge status={note.status} />
+            {isNoteOverdue(note) && <OverdueBadge />}
           </div>
+        </div>
+        <div className="price-tag-card rounded-xl p-5">
+          <p className="text-xs text-text-muted">Vencimento</p>
+          <p className="mt-1 font-medium text-text-primary">{note.due_date ? formatDate(note.due_date) : "Sem prazo"}</p>
         </div>
         <div className="price-tag-card rounded-xl p-5">
           <p className="text-xs text-text-muted">Saldo devedor</p>

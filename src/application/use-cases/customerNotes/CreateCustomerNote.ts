@@ -1,10 +1,20 @@
 import { CustomerNoteRepository, CreateCustomerNoteInput } from "@/domain/repositories/CustomerNoteRepository";
 import { CustomerNoteWithItems } from "@/domain/entities/CustomerNote";
+import { CustomerRepository } from "@/domain/repositories/CustomerRepository";
+import { formatCurrency } from "@/lib/format";
 
 export class CustomerNoteValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "CustomerNoteValidationError";
+  }
+}
+
+/** Erro específico de limite de crédito — o front-end pode oferecer "continuar mesmo assim". */
+export class CreditLimitExceededError extends CustomerNoteValidationError {
+  constructor(message: string) {
+    super(message);
+    this.name = "CreditLimitExceededError";
   }
 }
 
@@ -30,10 +40,37 @@ function validate(input: CreateCustomerNoteInput) {
 }
 
 export class CreateCustomerNote {
-  constructor(private customerNoteRepository: CustomerNoteRepository) {}
+  constructor(
+    private customerNoteRepository: CustomerNoteRepository,
+    private customerRepository: CustomerRepository
+  ) {}
 
-  async execute(input: CreateCustomerNoteInput): Promise<CustomerNoteWithItems> {
+  async execute(input: CreateCustomerNoteInput, overrideLimit = false): Promise<CustomerNoteWithItems> {
     validate(input);
+
+    const customer = await this.customerRepository.findById(input.customer_id);
+    if (customer?.credit_limit) {
+      const limit = parseFloat(customer.credit_limit);
+      if (Number.isFinite(limit)) {
+        const existingNotes = await this.customerNoteRepository.findAll({ customerId: input.customer_id });
+        const openBalance = existingNotes
+          .filter((n) => n.status !== "pago")
+          .reduce((sum, n) => sum + Math.max(0, parseFloat(n.total) - parseFloat(n.paid_amount)), 0);
+        const newAmount = input.items.reduce(
+          (sum, item) => sum + item.quantity * parseFloat(item.unit_price),
+          0
+        );
+        const projected = openBalance + newAmount;
+        if (projected > limit && !overrideLimit) {
+          throw new CreditLimitExceededError(
+            `Esse cliente tem limite de crédito de ${formatCurrency(limit)} e já deve ${formatCurrency(
+              openBalance
+            )}. Essa nota levaria o saldo a ${formatCurrency(projected)}, acima do limite.`
+          );
+        }
+      }
+    }
+
     return this.customerNoteRepository.create(input);
   }
 }

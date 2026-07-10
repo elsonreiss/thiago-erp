@@ -17,6 +17,8 @@ const STATEMENTS: string[] = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS photo TEXT`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT true`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ`,
   `DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_role_check') THEN
       ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin','gerente','funcionario'));
@@ -61,10 +63,12 @@ const STATEMENTS: string[] = [
     city TEXT,
     state TEXT,
     notes TEXT,
+    credit_limit NUMERIC(12,2),
     active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
+  `ALTER TABLE customers ADD COLUMN IF NOT EXISTS credit_limit NUMERIC(12,2)`,
   `CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name)`,
 
   `CREATE TABLE IF NOT EXISTS products (
@@ -176,9 +180,11 @@ const STATEMENTS: string[] = [
     paid_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'aberto',
     sale_id INTEGER REFERENCES sales(id) ON DELETE SET NULL,
+    due_date DATE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     paid_at TIMESTAMPTZ
   )`,
+  `ALTER TABLE customer_notes ADD COLUMN IF NOT EXISTS due_date DATE`,
   `DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'customer_notes_status_check') THEN
       ALTER TABLE customer_notes ADD CONSTRAINT customer_notes_status_check CHECK (status IN ('aberto','parcial','pago'));
@@ -225,6 +231,19 @@ const STATEMENTS: string[] = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS idx_cash_closings_date ON cash_closings(closing_date)`,
+
+  `CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    user_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id INTEGER,
+    details TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id)`,
 
   `CREATE TABLE IF NOT EXISTS expenses (
     id SERIAL PRIMARY KEY,

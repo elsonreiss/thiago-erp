@@ -1,5 +1,6 @@
 import { CustomerNoteWithItems } from "@/domain/entities/CustomerNote";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { isNoteOverdue } from "@/lib/customerNoteOverdue";
 
 /** Monta o texto do extrato de fiado de um cliente, pronto pra colar/enviar no WhatsApp. */
 export function buildCustomerNotesWhatsAppMessage(
@@ -23,7 +24,9 @@ export function buildCustomerNotesWhatsAppMessage(
   } else {
     for (const note of openNotes) {
       const saldo = Math.max(0, parseFloat(note.total) - parseFloat(note.paid_amount));
-      lines.push(`*${formatDate(note.created_at)}*`);
+      const overdueTag = isNoteOverdue(note) ? " (ATRASADA)" : "";
+      const dueTag = note.due_date ? ` — vencimento ${formatDate(note.due_date)}${overdueTag}` : "";
+      lines.push(`*${formatDate(note.created_at)}${dueTag}*`);
       for (const item of note.items) {
         lines.push(`• ${item.quantity}x ${item.product_name} — ${formatCurrency(item.subtotal)}`);
       }

@@ -9,6 +9,8 @@ export interface User {
   role: UserRole;
   photo: string | null; // base64 data URL
   active: boolean;
+  failed_login_attempts: number;
+  locked_until: string | null;
   created_at: string;
   updated_at: string;
 }

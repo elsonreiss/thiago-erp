@@ -7,6 +7,7 @@ import { Product } from "@/domain/entities/Product";
 import { formatCurrency, parseCurrencyInput } from "@/lib/format";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 import { ManualItemForm } from "@/components/ui/ManualItemForm";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export function AddNoteItemForm({ noteId }: { noteId: number }) {
   const router = useRouter();
@@ -16,6 +17,13 @@ export function AddNoteItemForm({ noteId }: { noteId: number }) {
   const [showManual, setShowManual] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitWarning, setLimitWarning] = useState<string | null>(null);
+  const [pendingPayload, setPendingPayload] = useState<{
+    product_id: number | null;
+    product_name?: string;
+    quantity: number;
+    unit_price: string;
+  } | null>(null);
 
   function selectProduct(p: Product) {
     setProduct(p);
@@ -23,17 +31,25 @@ export function AddNoteItemForm({ noteId }: { noteId: number }) {
     setQuantity(1);
   }
 
-  async function submitItem(payload: { product_id: number | null; product_name?: string; quantity: number; unit_price: string }) {
+  async function submitItem(
+    payload: { product_id: number | null; product_name?: string; quantity: number; unit_price: string },
+    overrideLimit = false
+  ) {
     setError(null);
     setSaving(true);
     try {
       const res = await fetch(`/api/customer-notes/${noteId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, override_limit: overrideLimit }),
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.code === "CREDIT_LIMIT_EXCEEDED") {
+          setPendingPayload(payload);
+          setLimitWarning(data.error);
+          return;
+        }
         setError(data.error ?? "Erro ao adicionar item.");
         return;
       }
@@ -41,6 +57,7 @@ export function AddNoteItemForm({ noteId }: { noteId: number }) {
       setQuantity(1);
       setUnitPrice("0,00");
       setShowManual(false);
+      setPendingPayload(null);
       router.refresh();
     } catch {
       setError("Erro de conexão. Tente novamente.");
@@ -72,6 +89,18 @@ export function AddNoteItemForm({ noteId }: { noteId: number }) {
 
   return (
     <div className="flex flex-col gap-3">
+      <ConfirmDialog
+        open={!!limitWarning}
+        title="Limite de crédito excedido"
+        message={limitWarning ?? ""}
+        confirmLabel="Adicionar mesmo assim"
+        loading={saving}
+        onConfirm={() => pendingPayload && submitItem(pendingPayload, true)}
+        onCancel={() => {
+          setLimitWarning(null);
+          setPendingPayload(null);
+        }}
+      />
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-bg-secondary p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-medium text-text-primary">Adicionar item (nova compra nesta nota)</p>

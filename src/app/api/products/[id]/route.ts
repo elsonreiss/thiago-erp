@@ -6,6 +6,7 @@ import { UpdateProduct, ProductNotFoundError } from "@/application/use-cases/pro
 import { DeleteProduct } from "@/application/use-cases/products/DeleteProduct";
 import { DuplicateProductCodeError, ProductValidationError } from "@/application/use-cases/products/CreateProduct";
 import { UpdateProductInput } from "@/domain/repositories/ProductRepository";
+import { logAudit } from "@/lib/auditLog";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -57,9 +58,19 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   const { id } = await params;
 
+  const existing = await container.productRepository.findById(Number(id));
+
   const useCase = new DeleteProduct(container.productRepository);
   try {
     await useCase.execute(Number(id));
+    await logAudit({
+      userId: user.id,
+      userName: user.name,
+      action: "delete",
+      entityType: "product",
+      entityId: Number(id),
+      details: existing ? `Produto excluído: ${existing.name} (${existing.code})` : null,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[DELETE /api/products/[id]]", err);

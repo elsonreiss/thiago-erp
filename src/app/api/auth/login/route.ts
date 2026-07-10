@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { container } from "@/container";
-import { Login, InvalidCredentialsError, UserInactiveError } from "@/application/use-cases/auth/Login";
+import { Login, InvalidCredentialsError, UserInactiveError, AccountLockedError } from "@/application/use-cases/auth/Login";
 import { SESSION_COOKIE_NAME, SESSION_DURATION_MS } from "@/infrastructure/auth/session";
 
 export async function POST(request: NextRequest) {
@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ user });
   } catch (err) {
+    if (err instanceof AccountLockedError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
     if (err instanceof InvalidCredentialsError || err instanceof UserInactiveError) {
       return NextResponse.json({ error: err.message }, { status: 401 });
     }

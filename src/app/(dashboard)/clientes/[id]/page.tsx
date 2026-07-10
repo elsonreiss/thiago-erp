@@ -14,7 +14,15 @@ export default async function EditarClientePage({ params }: { params: Promise<{ 
   const customer = await container.customerRepository.findById(Number(id));
   if (!customer) notFound();
 
-  const sales = await container.saleRepository.findAll({ customerId: customer.id });
+  const [sales, notes] = await Promise.all([
+    container.saleRepository.findAll({ customerId: customer.id }),
+    container.customerNoteRepository.findAll({ customerId: customer.id }),
+  ]);
+
+  const openBalance = notes
+    .filter((n) => n.status !== "pago")
+    .reduce((sum, n) => sum + Math.max(0, parseFloat(n.total) - parseFloat(n.paid_amount)), 0);
+  const creditLimit = customer.credit_limit ? parseFloat(customer.credit_limit) : null;
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
@@ -24,6 +32,28 @@ export default async function EditarClientePage({ params }: { params: Promise<{ 
       </div>
 
       <CustomerForm customer={customer} />
+
+      {creditLimit !== null && (
+        <div className="price-tag-card rounded-xl p-6">
+          <h2 className="mb-4 font-display text-base font-semibold text-text-primary">Limite de crédito (fiado)</h2>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-xs text-text-muted">Limite</p>
+              <p className="font-numeric font-semibold text-text-primary">{formatCurrency(creditLimit)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-text-muted">Em aberto</p>
+              <p className="font-numeric font-semibold text-danger">{formatCurrency(openBalance)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-text-muted">Disponível</p>
+              <p className="font-numeric font-semibold text-success">
+                {formatCurrency(Math.max(0, creditLimit - openBalance))}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Link
         href={`/notas-clientes/cliente/${customer.id}`}

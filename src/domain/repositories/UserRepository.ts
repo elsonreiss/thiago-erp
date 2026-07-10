@@ -25,4 +25,10 @@ export interface UserRepository {
   create(input: CreateUserInput): Promise<User>;
   update(id: number, input: UpdateUserInput): Promise<User | null>;
   updatePhoto(id: number, photo: string | null): Promise<User | null>;
+  /** Incrementa o contador de tentativas de login falhas e retorna o novo valor. */
+  incrementFailedLoginAttempts(id: number): Promise<number>;
+  /** Bloqueia o login até a data/hora informada. */
+  setLockUntil(id: number, until: string | null): Promise<void>;
+  /** Zera o contador de tentativas e remove o bloqueio (usado no login bem-sucedido). */
+  resetFailedLoginAttempts(id: number): Promise<void>;
 }

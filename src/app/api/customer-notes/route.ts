@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { container } from "@/container";
 import { ListCustomerNotes } from "@/application/use-cases/customerNotes/ListCustomerNotes";
-import { CreateCustomerNote, CustomerNoteValidationError } from "@/application/use-cases/customerNotes/CreateCustomerNote";
+import { CreateCustomerNote, CustomerNoteValidationError, CreditLimitExceededError } from "@/application/use-cases/customerNotes/CreateCustomerNote";
 import { CreateCustomerNoteInput } from "@/domain/repositories/CustomerNoteRepository";
 import { CustomerNoteStatus } from "@/domain/entities/CustomerNote";
 
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     customer_id: Number(body.customer_id),
     user_id: user.id,
     description: body.description ?? null,
+    due_date: body.due_date ?? null,
     items: (body.items ?? []).map((item) => ({
       product_id: item.product_id ? Number(item.product_id) : null,
       product_name: item.product_name ?? undefined,
@@ -48,12 +49,16 @@ export async function POST(request: NextRequest) {
       unit_price: String(item.unit_price),
     })),
   };
+  const overrideLimit = Boolean((body as { override_limit?: boolean }).override_limit);
 
-  const useCase = new CreateCustomerNote(container.customerNoteRepository);
+  const useCase = new CreateCustomerNote(container.customerNoteRepository, container.customerRepository);
   try {
-    const note = await useCase.execute(input);
+    const note = await useCase.execute(input, overrideLimit);
     return NextResponse.json({ note }, { status: 201 });
   } catch (err) {
+    if (err instanceof CreditLimitExceededError) {
+      return NextResponse.json({ error: err.message, code: "CREDIT_LIMIT_EXCEEDED" }, { status: 409 });
+    }
     if (err instanceof CustomerNoteValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }

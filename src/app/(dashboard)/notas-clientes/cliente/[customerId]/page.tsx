@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { container } from "@/container";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { CustomerNoteStatusBadge } from "@/components/customerNotes/CustomerNoteStatusBadge";
+import { OverdueBadge } from "@/components/customerNotes/OverdueBadge";
+import { isNoteOverdue } from "@/lib/customerNoteOverdue";
 import { buildCustomerNotesWhatsAppMessage } from "@/lib/customerNoteMessage";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
@@ -112,7 +114,10 @@ export default async function ExtratoClientePage({ params }: Params) {
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <CustomerNoteStatusBadge status={note.status} />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <CustomerNoteStatusBadge status={note.status} />
+                      {isNoteOverdue(note) && <OverdueBadge />}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right font-numeric font-medium text-text-primary">
                     {formatCurrency(note.total)}

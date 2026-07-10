@@ -15,6 +15,7 @@ export interface CreateCustomerNoteInput {
   customer_id: number;
   user_id: number;
   description: string | null;
+  due_date: string | null;
   items: CreateCustomerNoteItemInput[];
 }
 

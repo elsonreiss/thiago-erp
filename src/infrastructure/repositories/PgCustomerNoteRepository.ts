@@ -225,10 +225,10 @@ export class PgCustomerNoteRepository implements CustomerNoteRepository {
       const total = subtotalSum.toFixed(2);
 
       const { rows: noteRows } = await client.query(
-        `INSERT INTO customer_notes (customer_id, user_id, description, total, paid_amount, status)
-         VALUES ($1,$2,$3,$4,0,'aberto')
+        `INSERT INTO customer_notes (customer_id, user_id, description, total, paid_amount, status, due_date)
+         VALUES ($1,$2,$3,$4,0,'aberto',$5)
          RETURNING *`,
-        [input.customer_id, input.user_id, input.description, total]
+        [input.customer_id, input.user_id, input.description, total, input.due_date ?? null]
       );
       const note = noteRows[0];
 

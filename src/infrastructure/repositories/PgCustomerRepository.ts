@@ -39,8 +39,8 @@ export class PgCustomerRepository implements CustomerRepository {
 
   async create(input: CreateCustomerInput): Promise<Customer> {
     const { rows } = await query<Customer>(
-      `INSERT INTO customers (name, document, phone, whatsapp, email, address, city, state, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      `INSERT INTO customers (name, document, phone, whatsapp, email, address, city, state, notes, credit_limit)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING *`,
       [
         input.name,
@@ -52,6 +52,7 @@ export class PgCustomerRepository implements CustomerRepository {
         input.city,
         input.state,
         input.notes,
+        input.credit_limit,
       ]
     );
     return rows[0];

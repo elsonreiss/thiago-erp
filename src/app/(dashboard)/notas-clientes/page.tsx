@@ -4,9 +4,12 @@ import { requireUser } from "@/lib/auth";
 import { container } from "@/container";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { CustomerNoteStatusBadge } from "@/components/customerNotes/CustomerNoteStatusBadge";
+import { OverdueBadge } from "@/components/customerNotes/OverdueBadge";
+import { isNoteOverdue } from "@/lib/customerNoteOverdue";
 import { CustomerNoteStatus } from "@/domain/entities/CustomerNote";
 import { Pagination } from "@/components/ui/Pagination";
 import { DEFAULT_PAGE_SIZE, parsePage } from "@/lib/pagination";
+import { formatDate } from "@/lib/format";
 
 interface SearchParams {
   status?: string;
@@ -88,13 +91,14 @@ export default async function NotasClientesPage({ searchParams }: { searchParams
       </form>
 
       <div className="price-tag-card overflow-x-auto rounded-xl">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">Data</th>
               <th className="px-4 py-3 font-medium">Cliente</th>
               <th className="px-4 py-3 font-medium">Vendedor</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Vencimento</th>
               <th className="px-4 py-3 font-medium text-right">Total</th>
               <th className="px-4 py-3 font-medium text-right">Pago</th>
               <th className="px-4 py-3 font-medium text-right">Ações</th>
@@ -103,7 +107,7 @@ export default async function NotasClientesPage({ searchParams }: { searchParams
           <tbody>
             {notes.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
+                <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
                   Nenhuma nota encontrada.
                 </td>
               </tr>
@@ -119,8 +123,12 @@ export default async function NotasClientesPage({ searchParams }: { searchParams
                 </td>
                 <td className="px-4 py-3 text-text-secondary">{note.seller_name}</td>
                 <td className="px-4 py-3">
-                  <CustomerNoteStatusBadge status={note.status} />
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <CustomerNoteStatusBadge status={note.status} />
+                    {isNoteOverdue(note) && <OverdueBadge />}
+                  </div>
                 </td>
+                <td className="px-4 py-3 text-text-secondary">{note.due_date ? formatDate(note.due_date) : "-"}</td>
                 <td className="px-4 py-3 text-right font-numeric font-medium text-text-primary">
                   {formatCurrency(note.total)}
                 </td>

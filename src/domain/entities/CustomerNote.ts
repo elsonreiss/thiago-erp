@@ -11,6 +11,7 @@ export interface CustomerNote {
   paid_amount: string;
   status: CustomerNoteStatus;
   sale_id: number | null;
+  due_date: string | null;
   created_at: string;
   paid_at: string | null;
 }

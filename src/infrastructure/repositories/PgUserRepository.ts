@@ -66,4 +66,24 @@ export class PgUserRepository implements UserRepository {
     );
     return rows[0] ?? null;
   }
+
+  async incrementFailedLoginAttempts(id: number): Promise<number> {
+    const { rows } = await query<{ failed_login_attempts: number }>(
+      `UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = $1
+       RETURNING failed_login_attempts`,
+      [id]
+    );
+    return rows[0]?.failed_login_attempts ?? 0;
+  }
+
+  async setLockUntil(id: number, until: string | null): Promise<void> {
+    await query(`UPDATE users SET locked_until = $1 WHERE id = $2`, [until, id]);
+  }
+
+  async resetFailedLoginAttempts(id: number): Promise<void> {
+    await query(
+      `UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1`,
+      [id]
+    );
+  }
 }

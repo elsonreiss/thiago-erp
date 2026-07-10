@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, NotebookPen, PackagePlus, Trash2, User, X } from "lucide-react";
+import { Barcode, Loader2, NotebookPen, PackagePlus, Trash2, User, X } from "lucide-react";
 import { Product } from "@/domain/entities/Product";
 import { Customer } from "@/domain/entities/Customer";
 import { formatCurrency, parseCurrencyInput } from "@/lib/format";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 import { ManualItemForm } from "@/components/ui/ManualItemForm";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface CartLine {
   key: string;
@@ -24,8 +25,14 @@ export function CustomerNoteForm({ sellerName }: { sellerName: string }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [showManual, setShowManual] = useState(false);
   const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitWarning, setLimitWarning] = useState<string | null>(null);
+  const [scanValue, setScanValue] = useState("");
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const scanInputRef = useRef<HTMLInputElement>(null);
 
   const total = useMemo(
     () => lines.reduce((sum, line) => sum + parseFloat(line.unit_price || "0") * line.quantity, 0),
@@ -61,12 +68,72 @@ export function CustomerNoteForm({ sellerName }: { sellerName: string }) {
     setShowManual(false);
   }
 
+  async function handleScan(code: string) {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    setScanError(null);
+    setScanning(true);
+    try {
+      const res = await fetch(`/api/products/lookup?code=${encodeURIComponent(trimmed)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setScanError(data.error ?? "Produto não encontrado.");
+        return;
+      }
+      addProduct(data.product);
+      setScanValue("");
+    } catch {
+      setScanError("Erro de conexão ao buscar produto.");
+    } finally {
+      setScanning(false);
+      scanInputRef.current?.focus();
+    }
+  }
+
   function updateLine(key: string, patch: Partial<CartLine>) {
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   }
 
   function removeLine(key: string) {
     setLines((prev) => prev.filter((l) => l.key !== key));
+  }
+
+  async function submitNote(overrideLimit: boolean) {
+    setSaving(true);
+    try {
+      const payload = {
+        customer_id: customer!.id,
+        description: description.trim() || null,
+        due_date: dueDate || null,
+        items: lines.map((l) => ({
+          product_id: l.product?.id ?? null,
+          product_name: l.product ? undefined : l.manualName,
+          quantity: l.quantity,
+          unit_price: parseCurrencyInput(l.unit_price),
+        })),
+        override_limit: overrideLimit,
+      };
+      const res = await fetch("/api/customer-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.code === "CREDIT_LIMIT_EXCEEDED") {
+          setLimitWarning(data.error);
+          return;
+        }
+        setError(data.error ?? "Erro ao registrar nota.");
+        return;
+      }
+      router.push(`/notas-clientes/${data.note.id}`);
+      router.refresh();
+    } catch {
+      setError("Erro de conexão. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -88,40 +155,22 @@ export function CustomerNoteForm({ sellerName }: { sellerName: string }) {
       }
     }
 
-    setSaving(true);
-    try {
-      const payload = {
-        customer_id: customer.id,
-        description: description.trim() || null,
-        items: lines.map((l) => ({
-          product_id: l.product?.id ?? null,
-          product_name: l.product ? undefined : l.manualName,
-          quantity: l.quantity,
-          unit_price: parseCurrencyInput(l.unit_price),
-        })),
-      };
-      const res = await fetch("/api/customer-notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao registrar nota.");
-        return;
-      }
-      router.push(`/notas-clientes/${data.note.id}`);
-      router.refresh();
-    } catch {
-      setError("Erro de conexão. Tente novamente.");
-    } finally {
-      setSaving(false);
-    }
+    await submitNote(false);
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {error && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
+
+      <ConfirmDialog
+        open={!!limitWarning}
+        title="Limite de crédito excedido"
+        message={limitWarning ?? ""}
+        confirmLabel="Registrar mesmo assim"
+        loading={saving}
+        onConfirm={() => submitNote(true)}
+        onCancel={() => setLimitWarning(null)}
+      />
 
       <div className="price-tag-card rounded-xl p-6">
         <h2 className="mb-4 font-display text-base font-semibold text-text-primary">Vendedor</h2>
@@ -169,6 +218,30 @@ export function CustomerNoteForm({ sellerName }: { sellerName: string }) {
           >
             <PackagePlus size={14} /> Item avulso (sem cadastro)
           </button>
+        </div>
+
+        <div className="mb-3 flex flex-col gap-1.5">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+            <Barcode size={14} /> Leitor de código de barras
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              ref={scanInputRef}
+              type="text"
+              value={scanValue}
+              onChange={(e) => setScanValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleScan(scanValue);
+                }
+              }}
+              placeholder="Escaneie ou digite o código e aperte Enter..."
+              className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm font-numeric text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+            {scanning && <Loader2 size={16} className="animate-spin text-text-muted" />}
+          </div>
+          {scanError && <p className="text-xs text-danger">{scanError}</p>}
         </div>
 
         <Autocomplete<Product>
@@ -273,6 +346,17 @@ export function CustomerNoteForm({ sellerName }: { sellerName: string }) {
 
       <div className="price-tag-card rounded-xl p-6">
         <h2 className="mb-4 font-display text-base font-semibold text-text-primary">Observações</h2>
+        <div className="mb-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-text-primary">Data de vencimento (opcional)</span>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full max-w-xs rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </label>
+        </div>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}

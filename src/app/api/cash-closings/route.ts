@@ -4,6 +4,7 @@ import { container } from "@/container";
 import { RegisterCashClosing, CashClosingValidationError } from "@/application/use-cases/cashClosings/RegisterCashClosing";
 import { canViewFinancials } from "@/domain/entities/User";
 import { UpsertCashClosingInput } from "@/domain/repositories/CashClosingRepository";
+import { logAudit } from "@/lib/auditLog";
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
@@ -33,6 +34,14 @@ export async function POST(request: NextRequest) {
   const useCase = new RegisterCashClosing(container.cashClosingRepository, container.saleRepository);
   try {
     const closing = await useCase.execute(input);
+    await logAudit({
+      userId: user.id,
+      userName: user.name,
+      action: "register",
+      entityType: "cash_closing",
+      entityId: closing.id,
+      details: `Fechamento de caixa de ${input.closing_date} (contado: ${closing.counted_cash}, diferença: ${closing.difference})`,
+    });
     return NextResponse.json({ closing }, { status: 201 });
   } catch (err) {
     if (err instanceof CashClosingValidationError) {

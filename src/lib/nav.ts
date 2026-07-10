@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   Wallet,
   BarChart3,
+  ShieldCheck,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -49,6 +50,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Relatórios",
     icon: BarChart3,
     visible: canViewFinancials,
+  },
+  {
+    href: "/auditoria",
+    label: "Auditoria",
+    icon: ShieldCheck,
+    visible: isAdmin,
   },
   {
     href: "/configuracoes",

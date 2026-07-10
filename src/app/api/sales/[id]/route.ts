@@ -4,6 +4,7 @@ import { container } from "@/container";
 import { GetSale } from "@/application/use-cases/sales/GetSale";
 import { DeleteSale, SaleNotFoundError } from "@/application/use-cases/sales/DeleteSale";
 import { canViewFinancials, isAdmin } from "@/domain/entities/User";
+import { logAudit } from "@/lib/auditLog";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -32,9 +33,19 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   }
   const { id } = await params;
 
+  const existing = await container.saleRepository.findById(Number(id));
+
   const useCase = new DeleteSale(container.saleRepository);
   try {
     await useCase.execute(Number(id));
+    await logAudit({
+      userId: user.id,
+      userName: user.name,
+      action: "delete",
+      entityType: "sale",
+      entityId: Number(id),
+      details: existing ? `Venda excluída (total: ${existing.total}, cliente: ${existing.customer_name ?? "Consumidor final"})` : null,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof SaleNotFoundError) {

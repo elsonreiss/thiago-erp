@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Customer } from "@/domain/entities/Customer";
+import { parseCurrencyInput } from "@/lib/format";
 
 const BRAZIL_STATES = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR",
@@ -32,6 +33,9 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
       city: String(form.get("city") ?? "").trim() || null,
       state: String(form.get("state") ?? "").trim() || null,
       notes: String(form.get("notes") ?? "").trim() || null,
+      credit_limit: String(form.get("credit_limit") ?? "").trim()
+        ? parseCurrencyInput(String(form.get("credit_limit")))
+        : null,
     };
 
     try {
@@ -75,6 +79,14 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
           </Field>
           <Field label="WhatsApp">
             <input name="whatsapp" defaultValue={customer?.whatsapp ?? ""} className={inputClass} />
+          </Field>
+          <Field label="Limite de crédito (fiado)">
+            <input
+              name="credit_limit"
+              placeholder="Sem limite"
+              defaultValue={customer?.credit_limit ?? ""}
+              className={inputClass}
+            />
           </Field>
         </div>
       </div>
