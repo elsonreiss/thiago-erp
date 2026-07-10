@@ -45,7 +45,7 @@ export function DeleteSaleButton({ id }: { id: number }) {
       <ConfirmDialog
         open={showConfirm}
         title="Excluir venda"
-        message={`Excluir a venda #${id}? O estoque dos itens vendidos será devolvido automaticamente. Essa ação não pode ser desfeita.`}
+        message="Excluir esta venda? O estoque dos itens vendidos será devolvido automaticamente. Essa ação não pode ser desfeita."
         confirmLabel="Excluir venda"
         loading={loading}
         onConfirm={handleDelete}

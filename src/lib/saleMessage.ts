@@ -9,7 +9,7 @@ export function buildSaleWhatsAppMessage(sale: SaleWithItems, storeName = "Thiag
 
   const lines: string[] = [];
   lines.push(`*${storeName}*`);
-  lines.push(`Comprovante de venda #${sale.id}`);
+  lines.push(`Comprovante de venda`);
   lines.push(formatDateTime(sale.created_at));
   lines.push("");
   lines.push(`Cliente: ${sale.customer_name ?? "Consumidor final"}`);

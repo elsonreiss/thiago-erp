@@ -40,7 +40,7 @@ export default async function VendaDetalhePage({ params }: Params) {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="font-display text-2xl font-semibold text-text-primary">Venda #{sale.id}</h1>
+            <h1 className="font-display text-2xl font-semibold text-text-primary">Venda</h1>
             <p className="text-sm text-text-secondary">{formatDateTime(sale.created_at)}</p>
           </div>
         </div>

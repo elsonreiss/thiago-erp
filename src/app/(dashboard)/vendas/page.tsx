@@ -193,7 +193,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
                     {isAdmin(user.role) && (
                       <DeleteButton
                         endpoint={`/api/sales/${sale.id}`}
-                        confirmMessage={`Excluir a venda #${sale.id}? O estoque dos itens será devolvido automaticamente.`}
+                        confirmMessage="Excluir esta venda? O estoque dos itens será devolvido automaticamente."
                       />
                     )}
                   </div>

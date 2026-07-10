@@ -46,7 +46,7 @@ export default async function ImprimirVendaPage({ params }: Params) {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-text-muted">Venda #{sale.id}</p>
+            <p className="text-xs text-text-muted">Emitido em</p>
             <p className="text-sm text-text-primary">{formatDateTime(sale.created_at)}</p>
           </div>
         </div>
