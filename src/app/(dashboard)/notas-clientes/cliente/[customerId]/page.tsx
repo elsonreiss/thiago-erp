@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MessageCircle, Printer } from "lucide-react";
+import { ArrowLeft, MessageCircle } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { container } from "@/container";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { CustomerNoteStatusBadge } from "@/components/customerNotes/CustomerNoteStatusBadge";
 import { OverdueBadge } from "@/components/customerNotes/OverdueBadge";
 import { isNoteOverdue } from "@/lib/customerNoteOverdue";
+import { CustomerStatementPrintContent } from "@/components/customerNotes/CustomerStatementPrintContent";
+import { DownloadPdfButton } from "@/components/ui/DownloadPdfButton";
 import { buildCustomerNotesWhatsAppMessage } from "@/lib/customerNoteMessage";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
@@ -30,7 +32,8 @@ export default async function ExtratoClientePage({ params }: Params) {
   const whatsappLink = buildWhatsAppLink(whatsappNumber, buildCustomerNotesWhatsAppMessage(customer.name, notes));
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
+    <div className="flex flex-col gap-6 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
@@ -45,13 +48,7 @@ export default async function ExtratoClientePage({ params }: Params) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/notas-clientes/cliente/${customer.id}/imprimir`}
-            target="_blank"
-            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-secondary"
-          >
-            <Printer size={16} /> Baixar PDF
-          </Link>
+          <DownloadPdfButton />
           <a
             href={whatsappLink}
             target="_blank"
@@ -135,5 +132,7 @@ export default async function ExtratoClientePage({ params }: Params) {
         </table>
       </div>
     </div>
+    <CustomerStatementPrintContent customer={customer} notes={notes} />
+    </>
   );
 }

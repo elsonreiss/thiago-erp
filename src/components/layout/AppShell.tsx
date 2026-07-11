@@ -31,17 +31,23 @@ export function AppShell({ user, children }: { user: PublicUser; children: React
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar
-        items={items}
-        collapsed={collapsed}
-        onToggleCollapsed={toggleCollapsed}
-        mobileOpen={mobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
-      />
+      <div className="print:hidden">
+        <Sidebar
+          items={items}
+          collapsed={collapsed}
+          onToggleCollapsed={toggleCollapsed}
+          mobileOpen={mobileOpen}
+          onCloseMobile={() => setMobileOpen(false)}
+        />
+      </div>
 
-      <div className={`flex min-h-screen flex-col transition-all duration-200 ${collapsed ? "md:pl-[76px]" : "md:pl-64"}`}>
-        <Topbar user={user} onOpenMobileMenu={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+      <div
+        className={`flex min-h-screen flex-col transition-all duration-200 print:!pl-0 ${collapsed ? "md:pl-[76px]" : "md:pl-64"}`}
+      >
+        <div className="print:hidden">
+          <Topbar user={user} onOpenMobileMenu={() => setMobileOpen(true)} />
+        </div>
+        <main className="flex-1 p-4 sm:p-6 print:!p-0">{children}</main>
       </div>
     </div>
   );

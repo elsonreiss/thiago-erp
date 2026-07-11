@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
@@ -10,10 +10,46 @@ import { PAYMENT_METHOD_LABELS } from "@/lib/payment";
 
 type Format = "a4" | "58" | "80";
 
-export function ReceiptView({ sale, storeName = "Thiago Casa & Construção" }: { sale: SaleWithItems; storeName?: string }) {
-  const [format, setFormat] = useState<Format>("a4");
+export function ReceiptView({
+  sale,
+  storeName = "Thiago Casa & Construção",
+  initialFormat = "a4",
+  autoPrint = false,
+}: {
+  sale: SaleWithItems;
+  storeName?: string;
+  initialFormat?: Format;
+  autoPrint?: boolean;
+}) {
+  const [format, setFormat] = useState<Format>(initialFormat);
+  const pendingPrintRef = useRef(false);
   const subtotal = sale.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
   const discount = parseFloat(sale.discount);
+
+  // Dispara a impressão automaticamente quando a página é aberta com ?autoprint=1
+  // (usado pelo botão "Imprimir Cupom 80mm" na tela da venda).
+  useEffect(() => {
+    if (autoPrint) {
+      const t = setTimeout(() => window.print(), 300);
+      return () => clearTimeout(t);
+    }
+  }, [autoPrint]);
+
+  // Depois de trocar de formato via botão "Imprimir Cupom 80mm", espera o @page
+  // aplicar o novo tamanho de página antes de abrir o diálogo de impressão.
+  // Usa ref (em vez de state) porque isso não deve disparar um re-render por si só.
+  useEffect(() => {
+    if (pendingPrintRef.current) {
+      pendingPrintRef.current = false;
+      const t = setTimeout(() => window.print(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [format]);
+
+  function quickPrint80() {
+    pendingPrintRef.current = true;
+    setFormat("80");
+  }
 
   const pageSize =
     format === "58" ? "58mm auto" : format === "80" ? "80mm auto" : "A4";
@@ -35,13 +71,22 @@ export function ReceiptView({ sale, storeName = "Thiago Casa & Construção" }: 
           <FormatButton active={format === "58"} onClick={() => setFormat("58")} label="Cupom 58mm" />
           <FormatButton active={format === "80"} onClick={() => setFormat("80")} label="Cupom 80mm" />
         </div>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-hover"
-        >
-          <Printer size={16} /> Imprimir / Salvar PDF
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={quickPrint80}
+            className="flex items-center gap-2 rounded-lg border border-accent px-4 py-2 text-sm font-semibold text-accent hover:bg-accent-soft"
+          >
+            <Printer size={16} /> Imprimir Cupom 80mm
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-hover"
+          >
+            <Printer size={16} /> Imprimir / Salvar PDF
+          </button>
+        </div>
       </div>
 
       {format === "a4" ? (

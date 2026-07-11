@@ -14,13 +14,34 @@ export async function GET() {
   const products = await container.productRepository.findAll({ activeOnly: false });
 
   const rows = products.map((p) => {
-    const costValue = (parseFloat(p.purchase_price) * p.quantity).toFixed(2);
-    const saleValue = (parseFloat(p.sale_price) * p.quantity).toFixed(2);
-    return [p.code, p.name, p.category, p.quantity, p.purchase_price, costValue, p.sale_price, saleValue];
+    const costValueNum = parseFloat(p.purchase_price) * p.quantity;
+    const saleValueNum = parseFloat(p.sale_price) * p.quantity;
+    const profitNum = saleValueNum - costValueNum;
+    return [
+      p.code,
+      p.name,
+      p.category,
+      p.quantity,
+      p.purchase_price,
+      costValueNum.toFixed(2),
+      p.sale_price,
+      saleValueNum.toFixed(2),
+      profitNum.toFixed(2),
+    ];
   });
 
   const csv = buildCsv(
-    ["Código", "Produto", "Categoria", "Quantidade", "Custo unit.", "Valor em custo", "Preço venda", "Valor em venda"],
+    [
+      "Código",
+      "Produto",
+      "Categoria",
+      "Quantidade",
+      "Custo unit.",
+      "Valor em custo",
+      "Preço venda",
+      "Valor em venda",
+      "Lucro potencial",
+    ],
     rows
   );
 

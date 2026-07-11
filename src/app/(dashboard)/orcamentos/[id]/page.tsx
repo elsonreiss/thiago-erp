@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MessageCircle, Printer, ShoppingCart, User } from "lucide-react";
+import { ArrowLeft, MessageCircle, ShoppingCart, User } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { container } from "@/container";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { BudgetStatusBadge } from "@/components/budgets/BudgetStatusBadge";
 import { BudgetActions } from "@/components/budgets/BudgetActions";
+import { BudgetPrintContent } from "@/components/budgets/BudgetPrintContent";
+import { DownloadPdfButton } from "@/components/ui/DownloadPdfButton";
 import { buildBudgetWhatsAppMessage } from "@/lib/budgetMessage";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
@@ -25,7 +27,8 @@ export default async function OrcamentoDetalhePage({ params }: Params) {
   const subtotal = budget.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
+    <div className="flex flex-col gap-6 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
@@ -40,13 +43,7 @@ export default async function OrcamentoDetalhePage({ params }: Params) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/orcamentos/${budget.id}/imprimir`}
-            target="_blank"
-            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-secondary"
-          >
-            <Printer size={16} /> Baixar PDF
-          </Link>
+          <DownloadPdfButton />
           <a
             href={whatsappLink}
             target="_blank"
@@ -147,5 +144,7 @@ export default async function OrcamentoDetalhePage({ params }: Params) {
         </div>
       )}
     </div>
+    <BudgetPrintContent budget={budget} />
+    </>
   );
 }

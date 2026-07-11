@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MessageCircle, Printer, User } from "lucide-react";
+import { ArrowLeft, MessageCircle, User } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { container } from "@/container";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { PaymentMethodBadge } from "@/components/sales/PaymentMethodBadge";
 import { DeleteSaleButton } from "@/components/sales/DeleteSaleButton";
+import { SalePrintProvider } from "@/components/sales/SalePrintContext";
+import { SalePrintButtons } from "@/components/sales/SalePrintButtons";
+import { SalePrintContent } from "@/components/sales/SalePrintContent";
 import { canViewFinancials, isAdmin } from "@/domain/entities/User";
 import { buildSaleWhatsAppMessage } from "@/lib/saleMessage";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
@@ -30,7 +33,8 @@ export default async function VendaDetalhePage({ params }: Params) {
   const subtotal = sale.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
 
   return (
-    <div className="flex flex-col gap-6">
+    <SalePrintProvider sale={sale}>
+    <div className="flex flex-col gap-6 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
@@ -45,13 +49,7 @@ export default async function VendaDetalhePage({ params }: Params) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/vendas/${sale.id}/imprimir`}
-            target="_blank"
-            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-secondary"
-          >
-            <Printer size={16} /> Baixar PDF
-          </Link>
+          <SalePrintButtons />
           <a
             href={whatsappLink}
             target="_blank"
@@ -134,5 +132,7 @@ export default async function VendaDetalhePage({ params }: Params) {
         </p>
       )}
     </div>
+    <SalePrintContent />
+    </SalePrintProvider>
   );
 }

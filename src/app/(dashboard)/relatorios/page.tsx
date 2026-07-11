@@ -37,6 +37,8 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
 
   const stockCostTotal = products.reduce((sum, p) => sum + parseFloat(p.purchase_price) * p.quantity, 0);
   const stockSaleTotal = products.reduce((sum, p) => sum + parseFloat(p.sale_price) * p.quantity, 0);
+  const stockProfitTotal = stockSaleTotal - stockCostTotal;
+  const stockMarginPct = stockCostTotal > 0 ? (stockProfitTotal / stockCostTotal) * 100 : 0;
 
   const revenueByMonthMap = new Map(revenueByMonth.map((r) => [r.month, r.total]));
   const fullYearRevenue = MONTH_LABELS.map((label, i) => {
@@ -150,7 +152,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
           </a>
         </div>
 
-        <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-border bg-bg-secondary p-4">
             <p className="text-xs text-text-muted">Valor total em custo</p>
             <p className="font-numeric text-xl font-semibold text-text-primary">{formatCurrency(stockCostTotal)}</p>
@@ -159,31 +161,49 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
             <p className="text-xs text-text-muted">Valor total em venda</p>
             <p className="font-numeric text-xl font-semibold text-text-primary">{formatCurrency(stockSaleTotal)}</p>
           </div>
+          <div className="rounded-lg border border-accent bg-accent-soft p-4">
+            <p className="text-xs text-text-muted">Lucro potencial (se vender tudo)</p>
+            <p className="font-numeric text-xl font-semibold text-accent">{formatCurrency(stockProfitTotal)}</p>
+            <p className="text-xs text-text-muted">{stockMarginPct.toFixed(1)}% de margem sobre o custo</p>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-text-muted">
                 <th className="px-3 py-2 font-medium">Produto</th>
                 <th className="px-3 py-2 font-medium text-right">Qtd.</th>
                 <th className="px-3 py-2 font-medium text-right">Custo unit.</th>
                 <th className="px-3 py-2 font-medium text-right">Valor em custo</th>
+                <th className="px-3 py-2 font-medium text-right">Valor em venda</th>
+                <th className="px-3 py-2 font-medium text-right">Lucro potencial</th>
               </tr>
             </thead>
             <tbody>
-              {products.slice(0, 50).map((p) => (
-                <tr key={p.id} className="border-b border-border last:border-0">
-                  <td className="px-3 py-2 text-text-primary">
-                    {p.name} <span className="text-xs text-text-muted">({p.code})</span>
-                  </td>
-                  <td className="px-3 py-2 text-right font-numeric">{p.quantity}</td>
-                  <td className="px-3 py-2 text-right font-numeric">{formatCurrency(p.purchase_price)}</td>
-                  <td className="px-3 py-2 text-right font-numeric font-medium text-text-primary">
-                    {formatCurrency(parseFloat(p.purchase_price) * p.quantity)}
-                  </td>
-                </tr>
-              ))}
+              {products.slice(0, 50).map((p) => {
+                const costValue = parseFloat(p.purchase_price) * p.quantity;
+                const saleValue = parseFloat(p.sale_price) * p.quantity;
+                const profit = saleValue - costValue;
+                return (
+                  <tr key={p.id} className="border-b border-border last:border-0">
+                    <td className="px-3 py-2 text-text-primary">
+                      {p.name} <span className="text-xs text-text-muted">({p.code})</span>
+                    </td>
+                    <td className="px-3 py-2 text-right font-numeric">{p.quantity}</td>
+                    <td className="px-3 py-2 text-right font-numeric">{formatCurrency(p.purchase_price)}</td>
+                    <td className="px-3 py-2 text-right font-numeric font-medium text-text-primary">
+                      {formatCurrency(costValue)}
+                    </td>
+                    <td className="px-3 py-2 text-right font-numeric text-text-secondary">
+                      {formatCurrency(saleValue)}
+                    </td>
+                    <td className="px-3 py-2 text-right font-numeric font-medium text-accent">
+                      {formatCurrency(profit)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {products.length > 50 && (

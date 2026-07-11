@@ -11,7 +11,9 @@ import { RegisterPaymentForm } from "@/components/customerNotes/RegisterPaymentF
 import { DeleteNoteButton } from "@/components/customerNotes/DeleteNoteButton";
 import { AddNoteItemForm } from "@/components/customerNotes/AddNoteItemForm";
 import { NoteItemsTable } from "@/components/customerNotes/NoteItemsTable";
+import { ThermalNoteReceipt } from "@/components/customerNotes/ThermalNoteReceipt";
 import { PaymentMethodBadge } from "@/components/sales/PaymentMethodBadge";
+import { Print80Button } from "@/components/sales/Print80Button";
 import { isAdmin } from "@/domain/entities/User";
 
 type Params = { params: Promise<{ id: string }> };
@@ -27,7 +29,8 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
   const editable = note.status !== "pago";
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
+    <div className="flex flex-col gap-6 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
@@ -48,6 +51,7 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
           >
             <Receipt size={16} /> Ver extrato do cliente
           </Link>
+          <Print80Button />
           {isAdmin(user.role) && editable && <DeleteNoteButton id={note.id} />}
         </div>
       </div>
@@ -146,5 +150,7 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
         </div>
       )}
     </div>
+    <ThermalNoteReceipt note={note} />
+    </>
   );
 }
