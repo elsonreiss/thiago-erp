@@ -13,7 +13,7 @@ import { PAYMENT_METHOD_LABELS } from "@/lib/payment";
  * duas regras @page conflitando.
  */
 export function SalePrintContent() {
-  const { mode, sale, storeName } = useSalePrint();
+  const { mode, sale, storeName, companyDetail } = useSalePrint();
   if (!mode) return null;
 
   const subtotal = sale.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
@@ -29,6 +29,7 @@ export function SalePrintContent() {
               <Image src="/logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-contain" />
               <div>
                 <p className="font-display text-lg font-bold">{storeName}</p>
+                {companyDetail && <p className="text-xs text-gray-500">{companyDetail}</p>}
                 <p className="text-sm text-gray-600">Comprovante de venda</p>
               </div>
             </div>
@@ -51,6 +52,12 @@ export function SalePrintContent() {
               <p className="text-xs text-gray-500">Forma de pagamento</p>
               <p className="font-medium">{PAYMENT_METHOD_LABELS[sale.payment_method]}</p>
             </div>
+            {sale.nfce_number && (
+              <div>
+                <p className="text-xs text-gray-500">NFC-e</p>
+                <p className="font-medium">{sale.nfce_number}</p>
+              </div>
+            )}
           </div>
 
           <table className="w-full text-sm">
@@ -99,6 +106,7 @@ export function SalePrintContent() {
           )}
 
           <p className="mt-8 text-center text-xs text-gray-500">Obrigado pela preferência!</p>
+          <p className="mt-2 text-center text-[10px] text-gray-400">Documento sem valor fiscal — não substitui a nota fiscal.</p>
         </div>
       </div>
     );
@@ -110,6 +118,7 @@ export function SalePrintContent() {
       <div className="mx-auto w-[80mm] bg-white p-2 font-mono text-[11px] text-black">
         <div className="text-center leading-tight">
           <p className="font-bold uppercase">{storeName}</p>
+          {companyDetail && <p>{companyDetail}</p>}
           <p>Comprovante de venda</p>
           <p>{formatDateTime(sale.created_at)}</p>
         </div>
@@ -117,6 +126,7 @@ export function SalePrintContent() {
         <p>Cliente: {sale.customer_name ?? "Consumidor final"}</p>
         <p>Vendedor: {sale.seller_name}</p>
         <p>Pagto: {PAYMENT_METHOD_LABELS[sale.payment_method]}</p>
+        {sale.nfce_number && <p>NFC-e: {sale.nfce_number}</p>}
         <div className="my-1 border-t border-dashed border-black" />
         {sale.items.map((item) => (
           <div key={item.id} className="mb-1 leading-tight">
@@ -152,6 +162,7 @@ export function SalePrintContent() {
         )}
         <div className="my-1 border-t border-dashed border-black" />
         <p className="text-center leading-tight">Obrigado pela preferência!</p>
+        <p className="text-center text-[9px] leading-tight">Documento sem valor fiscal</p>
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ class FakeSaleRepository implements SaleRepository {
       discount: input.discount,
       total: "0.00",
       notes: input.notes,
+      nfce_number: null,
       created_at: new Date().toISOString(),
       items: [],
       customer_name: null,
@@ -55,6 +56,10 @@ class FakeSaleRepository implements SaleRepository {
     return [];
   }
   async delete(): Promise<void> {}
+
+  async updateNfceNumber(): Promise<SaleWithItems | null> {
+    return null;
+  }
 }
 
 function baseInput(overrides: Partial<CreateSaleInput> = {}): CreateSaleInput {

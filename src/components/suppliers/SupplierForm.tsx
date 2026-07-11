@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Supplier } from "@/domain/entities/Supplier";
+import { isValidCNPJ } from "@/lib/documentValidation";
 
 const BRAZIL_STATES = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR",
@@ -22,9 +23,15 @@ export function SupplierForm({ supplier }: { supplier?: Supplier }) {
     setSaving(true);
 
     const form = new FormData(e.currentTarget);
+    const cnpjValue = String(form.get("cnpj") ?? "").trim();
+    if (cnpjValue && !isValidCNPJ(cnpjValue)) {
+      setError("CNPJ inválido — confira os números digitados.");
+      setSaving(false);
+      return;
+    }
     const payload = {
       name: String(form.get("name") ?? "").trim(),
-      cnpj: String(form.get("cnpj") ?? "").trim() || null,
+      cnpj: cnpjValue || null,
       contact_name: String(form.get("contact_name") ?? "").trim() || null,
       phone: String(form.get("phone") ?? "").trim() || null,
       whatsapp: String(form.get("whatsapp") ?? "").trim() || null,

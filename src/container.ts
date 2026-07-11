@@ -10,6 +10,7 @@ import { ExpenseRepository } from "@/domain/repositories/ExpenseRepository";
 import { CustomerNoteRepository } from "@/domain/repositories/CustomerNoteRepository";
 import { CashClosingRepository } from "@/domain/repositories/CashClosingRepository";
 import { AuditLogRepository } from "@/domain/repositories/AuditLogRepository";
+import { CompanySettingsRepository } from "@/domain/repositories/CompanySettingsRepository";
 
 import { PgUserRepository } from "@/infrastructure/repositories/PgUserRepository";
 import { PgSessionRepository } from "@/infrastructure/repositories/PgSessionRepository";
@@ -23,6 +24,7 @@ import { PgExpenseRepository } from "@/infrastructure/repositories/PgExpenseRepo
 import { PgCustomerNoteRepository } from "@/infrastructure/repositories/PgCustomerNoteRepository";
 import { PgCashClosingRepository } from "@/infrastructure/repositories/PgCashClosingRepository";
 import { PgAuditLogRepository } from "@/infrastructure/repositories/PgAuditLogRepository";
+import { PgCompanySettingsRepository } from "@/infrastructure/repositories/PgCompanySettingsRepository";
 
 interface Container {
   userRepository: UserRepository;
@@ -37,6 +39,7 @@ interface Container {
   customerNoteRepository: CustomerNoteRepository;
   cashClosingRepository: CashClosingRepository;
   auditLogRepository: AuditLogRepository;
+  companySettingsRepository: CompanySettingsRepository;
 }
 
 export const container: Container = {
@@ -52,4 +55,5 @@ export const container: Container = {
   customerNoteRepository: new PgCustomerNoteRepository(),
   cashClosingRepository: new PgCashClosingRepository(),
   auditLogRepository: new PgAuditLogRepository(),
+  companySettingsRepository: new PgCompanySettingsRepository(),
 };

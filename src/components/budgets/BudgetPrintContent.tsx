@@ -10,9 +10,11 @@ import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 export function BudgetPrintContent({
   budget,
   storeName = "Thiago Casa & Construção",
+  companyDetail = null,
 }: {
   budget: BudgetWithItems;
   storeName?: string;
+  companyDetail?: string | null;
 }) {
   const subtotal = budget.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
 
@@ -25,6 +27,7 @@ export function BudgetPrintContent({
             <Image src="/logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-contain" />
             <div>
               <p className="font-display text-lg font-bold">{storeName}</p>
+              {companyDetail && <p className="text-xs text-gray-500">{companyDetail}</p>}
               <p className="text-sm text-gray-600">Orçamento</p>
             </div>
           </div>
@@ -97,6 +100,7 @@ export function BudgetPrintContent({
         <p className="mt-8 text-center text-xs text-gray-500">
           Orçamento sujeito a alteração sem aviso prévio após o prazo de validade.
         </p>
+        <p className="mt-2 text-center text-[10px] text-gray-400">Documento sem valor fiscal — não substitui a nota fiscal.</p>
       </div>
     </div>
   );

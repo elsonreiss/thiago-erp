@@ -25,6 +25,38 @@ export async function GET(_request: NextRequest, { params }: Params) {
   return NextResponse.json({ sale });
 }
 
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  if (!canViewFinancials(user.role)) {
+    return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+  }
+  const { id } = await params;
+
+  let body: { nfce_number?: string | null };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
+  }
+
+  const nfceNumber = body.nfce_number == null ? null : String(body.nfce_number).trim() || null;
+
+  const sale = await container.saleRepository.updateNfceNumber(Number(id), nfceNumber);
+  if (!sale) return NextResponse.json({ error: "Venda não encontrada." }, { status: 404 });
+
+  await logAudit({
+    userId: user.id,
+    userName: user.name,
+    action: "update_nfce_number",
+    entityType: "sale",
+    entityId: sale.id,
+    details: nfceNumber ? `Número da NFC-e vinculado: ${nfceNumber}` : "Número da NFC-e removido.",
+  });
+
+  return NextResponse.json({ sale });
+}
+
 export async function DELETE(_request: NextRequest, { params }: Params) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });

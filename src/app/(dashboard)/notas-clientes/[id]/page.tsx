@@ -12,6 +12,7 @@ import { DeleteNoteButton } from "@/components/customerNotes/DeleteNoteButton";
 import { AddNoteItemForm } from "@/components/customerNotes/AddNoteItemForm";
 import { NoteItemsTable } from "@/components/customerNotes/NoteItemsTable";
 import { ThermalNoteReceipt } from "@/components/customerNotes/ThermalNoteReceipt";
+import { toCompanyPrintInfo } from "@/lib/companyInfo";
 import { PaymentMethodBadge } from "@/components/sales/PaymentMethodBadge";
 import { Print80Button } from "@/components/sales/Print80Button";
 import { isAdmin } from "@/domain/entities/User";
@@ -27,6 +28,7 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
 
   const remaining = Math.max(0, parseFloat(note.total) - parseFloat(note.paid_amount));
   const editable = note.status !== "pago";
+  const companyInfo = toCompanyPrintInfo(await container.companySettingsRepository.get());
 
   return (
     <>
@@ -150,7 +152,7 @@ export default async function NotaClienteDetalhePage({ params }: Params) {
         </div>
       )}
     </div>
-    <ThermalNoteReceipt note={note} />
+    <ThermalNoteReceipt note={note} storeName={companyInfo.name} companyDetail={companyInfo.detailLine} />
     </>
   );
 }

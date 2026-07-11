@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Customer } from "@/domain/entities/Customer";
 import { parseCurrencyInput } from "@/lib/format";
+import { isValidDocument } from "@/lib/documentValidation";
 
 const BRAZIL_STATES = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR",
@@ -23,9 +24,15 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
     setSaving(true);
 
     const form = new FormData(e.currentTarget);
+    const documentValue = String(form.get("document") ?? "").trim();
+    if (documentValue && !isValidDocument(documentValue)) {
+      setError("CPF/CNPJ inválido — confira os números digitados.");
+      setSaving(false);
+      return;
+    }
     const payload = {
       name: String(form.get("name") ?? "").trim(),
-      document: String(form.get("document") ?? "").trim() || null,
+      document: documentValue || null,
       phone: String(form.get("phone") ?? "").trim() || null,
       whatsapp: String(form.get("whatsapp") ?? "").trim() || null,
       email: String(form.get("email") ?? "").trim() || null,

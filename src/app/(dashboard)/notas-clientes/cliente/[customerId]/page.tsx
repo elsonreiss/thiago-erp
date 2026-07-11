@@ -8,6 +8,7 @@ import { CustomerNoteStatusBadge } from "@/components/customerNotes/CustomerNote
 import { OverdueBadge } from "@/components/customerNotes/OverdueBadge";
 import { isNoteOverdue } from "@/lib/customerNoteOverdue";
 import { CustomerStatementPrintContent } from "@/components/customerNotes/CustomerStatementPrintContent";
+import { toCompanyPrintInfo } from "@/lib/companyInfo";
 import { DownloadPdfButton } from "@/components/ui/DownloadPdfButton";
 import { buildCustomerNotesWhatsAppMessage } from "@/lib/customerNoteMessage";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
@@ -30,6 +31,7 @@ export default async function ExtratoClientePage({ params }: Params) {
 
   const whatsappNumber = customer.whatsapp || customer.phone || null;
   const whatsappLink = buildWhatsAppLink(whatsappNumber, buildCustomerNotesWhatsAppMessage(customer.name, notes));
+  const companyInfo = toCompanyPrintInfo(await container.companySettingsRepository.get());
 
   return (
     <>
@@ -132,7 +134,12 @@ export default async function ExtratoClientePage({ params }: Params) {
         </table>
       </div>
     </div>
-    <CustomerStatementPrintContent customer={customer} notes={notes} />
+    <CustomerStatementPrintContent
+      customer={customer}
+      notes={notes}
+      storeName={companyInfo.name}
+      companyDetail={companyInfo.detailLine}
+    />
     </>
   );
 }

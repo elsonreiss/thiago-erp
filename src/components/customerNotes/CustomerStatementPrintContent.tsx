@@ -12,10 +12,12 @@ export function CustomerStatementPrintContent({
   customer,
   notes,
   storeName = "Thiago Casa & Construção",
+  companyDetail = null,
 }: {
   customer: Customer;
   notes: CustomerNoteWithItems[];
   storeName?: string;
+  companyDetail?: string | null;
 }) {
   const openNotes = notes.filter((n) => n.status !== "pago");
   const totalDevido = openNotes.reduce(
@@ -32,6 +34,7 @@ export function CustomerStatementPrintContent({
             <Image src="/logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-contain" />
             <div>
               <p className="font-display text-lg font-bold">{storeName}</p>
+              {companyDetail && <p className="text-xs text-gray-500">{companyDetail}</p>}
               <p className="text-sm text-gray-600">Extrato de fiado</p>
             </div>
           </div>
@@ -93,6 +96,8 @@ export function CustomerStatementPrintContent({
             <span>{formatCurrency(totalDevido)}</span>
           </div>
         </div>
+
+        <p className="mt-8 text-center text-[10px] text-gray-400">Documento sem valor fiscal — não substitui a nota fiscal.</p>
       </div>
     </div>
   );

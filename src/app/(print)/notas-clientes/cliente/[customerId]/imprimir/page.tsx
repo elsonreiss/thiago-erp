@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { container } from "@/container";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import { toCompanyPrintInfo } from "@/lib/companyInfo";
 import { PrintButton } from "@/components/budgets/PrintButton";
 
 type Params = { params: Promise<{ customerId: string }> };
@@ -20,6 +21,9 @@ export default async function ImprimirExtratoClientePage({ params }: Params) {
     (sum, n) => sum + Math.max(0, parseFloat(n.total) - parseFloat(n.paid_amount)),
     0
   );
+
+  const companySettings = await container.companySettingsRepository.get();
+  const companyInfo = toCompanyPrintInfo(companySettings);
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,7 +42,8 @@ export default async function ImprimirExtratoClientePage({ params }: Params) {
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-contain" />
             <div>
-              <p className="font-display text-lg font-bold text-text-primary">Thiago Casa &amp; Construção</p>
+              <p className="font-display text-lg font-bold text-text-primary">{companyInfo.name}</p>
+              {companyInfo.detailLine && <p className="text-xs text-text-muted">{companyInfo.detailLine}</p>}
               <p className="text-sm text-text-secondary">Extrato de fiado</p>
             </div>
           </div>
@@ -102,6 +107,8 @@ export default async function ImprimirExtratoClientePage({ params }: Params) {
             <span className="font-numeric">{formatCurrency(totalDevido)}</span>
           </div>
         </div>
+
+        <p className="mt-8 text-center text-[10px] text-text-muted">Documento sem valor fiscal — não substitui a nota fiscal.</p>
       </div>
     </div>
   );

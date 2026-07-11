@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { container } from "@/container";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import { toCompanyPrintInfo } from "@/lib/companyInfo";
 import { PrintButton } from "@/components/budgets/PrintButton";
 
 type Params = { params: Promise<{ id: string }> };
@@ -13,6 +14,9 @@ export default async function ImprimirOrcamentoPage({ params }: Params) {
 
   const budget = await container.budgetRepository.findById(Number(id));
   if (!budget) notFound();
+
+  const companySettings = await container.companySettingsRepository.get();
+  const companyInfo = toCompanyPrintInfo(companySettings);
 
   const subtotal = budget.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
 
@@ -33,7 +37,8 @@ export default async function ImprimirOrcamentoPage({ params }: Params) {
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-contain" />
             <div>
-              <p className="font-display text-lg font-bold text-text-primary">Thiago Casa &amp; Construção</p>
+              <p className="font-display text-lg font-bold text-text-primary">{companyInfo.name}</p>
+              {companyInfo.detailLine && <p className="text-xs text-text-muted">{companyInfo.detailLine}</p>}
               <p className="text-sm text-text-secondary">Orçamento</p>
             </div>
           </div>
@@ -106,6 +111,7 @@ export default async function ImprimirOrcamentoPage({ params }: Params) {
         <p className="mt-8 text-center text-xs text-text-muted">
           Orçamento sujeito a alteração sem aviso prévio após o prazo de validade.
         </p>
+        <p className="mt-2 text-center text-[10px] text-text-muted">Documento sem valor fiscal — não substitui a nota fiscal.</p>
       </div>
     </div>
   );

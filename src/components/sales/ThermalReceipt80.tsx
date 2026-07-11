@@ -65,6 +65,7 @@ export function ThermalReceipt80({
         )}
         <div className="my-1 border-t border-dashed border-black" />
         <p className="text-center leading-tight">Obrigado pela preferência!</p>
+        <p className="text-center text-[9px] leading-tight">Documento sem valor fiscal</p>
       </div>
     </div>
   );

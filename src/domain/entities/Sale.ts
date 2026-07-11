@@ -14,6 +14,8 @@ export interface Sale {
   discount: string;
   total: string;
   notes: string | null;
+  /** Número/chave da NFC-e emitida no sistema fiscal externo (referência opcional, sem validação). */
+  nfce_number: string | null;
   created_at: string;
 }
 

@@ -10,6 +10,7 @@ interface SalePrintCtxValue {
   printAs: (mode: "a4" | "80") => void;
   sale: SaleWithItems;
   storeName: string;
+  companyDetail: string | null;
 }
 
 const SalePrintCtx = createContext<SalePrintCtxValue | null>(null);
@@ -23,10 +24,12 @@ const SalePrintCtx = createContext<SalePrintCtxValue | null>(null);
 export function SalePrintProvider({
   sale,
   storeName = "Thiago Casa & Construção",
+  companyDetail = null,
   children,
 }: {
   sale: SaleWithItems;
   storeName?: string;
+  companyDetail?: string | null;
   children: ReactNode;
 }) {
   const [mode, setMode] = useState<PrintMode>(null);
@@ -47,7 +50,11 @@ export function SalePrintProvider({
     setMode(next);
   }
 
-  return <SalePrintCtx.Provider value={{ mode, printAs, sale, storeName }}>{children}</SalePrintCtx.Provider>;
+  return (
+    <SalePrintCtx.Provider value={{ mode, printAs, sale, storeName, companyDetail }}>
+      {children}
+    </SalePrintCtx.Provider>
+  );
 }
 
 export function useSalePrint() {

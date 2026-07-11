@@ -256,6 +256,28 @@ const STATEMENTS: string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date)`,
   `CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)`,
+
+  // Linha única (id sempre 1) com os dados cadastrais da loja — usada nos comprovantes
+  // impressos e na página de privacidade/LGPD, em vez de nome fixo no código.
+  `CREATE TABLE IF NOT EXISTS company_settings (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    legal_name TEXT NOT NULL DEFAULT 'Thiago Casa & Construção',
+    trade_name TEXT,
+    cnpj TEXT,
+    state_registration TEXT,
+    address TEXT,
+    city TEXT,
+    state TEXT,
+    zip_code TEXT,
+    phone TEXT,
+    tax_regime TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT company_settings_singleton CHECK (id = 1)
+  )`,
+  `INSERT INTO company_settings (id, legal_name) VALUES (1, 'Thiago Casa & Construção') ON CONFLICT (id) DO NOTHING`,
+
+  // Referência opcional ao número/chave da NFC-e emitida no sistema fiscal externo.
+  `ALTER TABLE sales ADD COLUMN IF NOT EXISTS nfce_number TEXT`,
 ];
 
 declare global {

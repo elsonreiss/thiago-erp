@@ -7,8 +7,10 @@ import { formatCurrency, formatDateTime } from "@/lib/format";
 import { PaymentMethodBadge } from "@/components/sales/PaymentMethodBadge";
 import { DeleteSaleButton } from "@/components/sales/DeleteSaleButton";
 import { SalePrintProvider } from "@/components/sales/SalePrintContext";
+import { toCompanyPrintInfo } from "@/lib/companyInfo";
 import { SalePrintButtons } from "@/components/sales/SalePrintButtons";
 import { SalePrintContent } from "@/components/sales/SalePrintContent";
+import { NfceNumberField } from "@/components/sales/NfceNumberField";
 import { canViewFinancials, isAdmin } from "@/domain/entities/User";
 import { buildSaleWhatsAppMessage } from "@/lib/saleMessage";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
@@ -31,9 +33,10 @@ export default async function VendaDetalhePage({ params }: Params) {
   const whatsappLink = buildWhatsAppLink(whatsappNumber, buildSaleWhatsAppMessage(sale));
 
   const subtotal = sale.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
+  const companyInfo = toCompanyPrintInfo(await container.companySettingsRepository.get());
 
   return (
-    <SalePrintProvider sale={sale}>
+    <SalePrintProvider sale={sale} storeName={companyInfo.name} companyDetail={companyInfo.detailLine}>
     <div className="flex flex-col gap-6 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -80,6 +83,8 @@ export default async function VendaDetalhePage({ params }: Params) {
           </div>
         </div>
       </div>
+
+      <NfceNumberField saleId={sale.id} initialValue={sale.nfce_number} />
 
       <div className="price-tag-card overflow-x-auto rounded-xl">
         <table className="w-full min-w-[560px] text-sm">

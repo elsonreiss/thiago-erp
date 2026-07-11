@@ -13,11 +13,13 @@ type Format = "a4" | "58" | "80";
 export function ReceiptView({
   sale,
   storeName = "Thiago Casa & Construção",
+  companyDetail = null,
   initialFormat = "a4",
   autoPrint = false,
 }: {
   sale: SaleWithItems;
   storeName?: string;
+  companyDetail?: string | null;
   initialFormat?: Format;
   autoPrint?: boolean;
 }) {
@@ -96,6 +98,7 @@ export function ReceiptView({
               <Image src="/logo.png" alt="Logo" width={56} height={56} className="h-14 w-14 object-contain" />
               <div>
                 <p className="font-display text-lg font-bold text-text-primary">{storeName}</p>
+                {companyDetail && <p className="text-xs text-text-muted">{companyDetail}</p>}
                 <p className="text-sm text-text-secondary">Comprovante de venda</p>
               </div>
             </div>
@@ -118,6 +121,12 @@ export function ReceiptView({
               <p className="text-xs text-text-muted">Forma de pagamento</p>
               <p className="font-medium text-text-primary">{PAYMENT_METHOD_LABELS[sale.payment_method]}</p>
             </div>
+            {sale.nfce_number && (
+              <div>
+                <p className="text-xs text-text-muted">NFC-e</p>
+                <p className="font-medium text-text-primary">{sale.nfce_number}</p>
+              </div>
+            )}
           </div>
 
           <table className="w-full text-sm">
@@ -166,6 +175,7 @@ export function ReceiptView({
           )}
 
           <p className="mt-8 text-center text-xs text-text-muted">Obrigado pela preferência!</p>
+          <p className="mt-2 text-center text-[10px] text-text-muted">Documento sem valor fiscal — não substitui a nota fiscal.</p>
         </div>
       ) : (
         <div
@@ -173,6 +183,7 @@ export function ReceiptView({
         >
           <div className="text-center leading-tight">
             <p className="font-bold uppercase">{storeName}</p>
+            {companyDetail && <p>{companyDetail}</p>}
             <p>Comprovante de venda</p>
             <p>{formatDateTime(sale.created_at)}</p>
           </div>
@@ -180,6 +191,7 @@ export function ReceiptView({
           <p>Cliente: {sale.customer_name ?? "Consumidor final"}</p>
           <p>Vendedor: {sale.seller_name}</p>
           <p>Pagto: {PAYMENT_METHOD_LABELS[sale.payment_method]}</p>
+          {sale.nfce_number && <p>NFC-e: {sale.nfce_number}</p>}
           <div className="my-1 border-t border-dashed border-black" />
           {sale.items.map((item) => (
             <div key={item.id} className="mb-1 leading-tight">
@@ -215,6 +227,7 @@ export function ReceiptView({
           )}
           <div className="my-1 border-t border-dashed border-black" />
           <p className="text-center leading-tight">Obrigado pela preferência!</p>
+          <p className="text-center text-[9px] leading-tight">Documento sem valor fiscal</p>
         </div>
       )}
     </div>

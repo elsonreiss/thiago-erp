@@ -69,6 +69,11 @@ export class PgSaleRepository implements SaleRepository {
     return { ...rows[0], items };
   }
 
+  async updateNfceNumber(id: number, nfceNumber: string | null): Promise<SaleWithItems | null> {
+    await query(`UPDATE sales SET nfce_number = $1 WHERE id = $2`, [nfceNumber, id]);
+    return this.findById(id);
+  }
+
   async findAll(filters: SaleFilters = {}): Promise<SaleWithItems[]> {
     const conditions: string[] = [];
     const values: unknown[] = [];

@@ -10,9 +10,11 @@ import { isNoteOverdue } from "@/lib/customerNoteOverdue";
 export function ThermalNoteReceipt({
   note,
   storeName = "Thiago Casa & Construção",
+  companyDetail = null,
 }: {
   note: CustomerNoteWithItems;
   storeName?: string;
+  companyDetail?: string | null;
 }) {
   const remaining = Math.max(0, parseFloat(note.total) - parseFloat(note.paid_amount));
 
@@ -22,6 +24,7 @@ export function ThermalNoteReceipt({
       <div className="mx-auto w-[80mm] bg-white p-2 font-mono text-[11px] text-black">
         <div className="text-center leading-tight">
           <p className="font-bold uppercase">{storeName}</p>
+          {companyDetail && <p>{companyDetail}</p>}
           <p>Nota de cliente (fiado)</p>
           <p>{formatDateTime(note.created_at)}</p>
         </div>
@@ -65,6 +68,7 @@ export function ThermalNoteReceipt({
         )}
         <div className="my-1 border-t border-dashed border-black" />
         <p className="text-center leading-tight">Obrigado pela preferência!</p>
+        <p className="text-center text-[9px] leading-tight">Documento sem valor fiscal</p>
       </div>
     </div>
   );

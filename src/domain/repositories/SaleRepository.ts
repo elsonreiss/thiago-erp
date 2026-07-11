@@ -44,4 +44,6 @@ export interface SaleRepository {
     date: string
   ): Promise<Array<{ payment_method: PaymentMethod; total: number; count: number }>>;
   delete(id: number): Promise<void>;
+  /** Salva o número/chave da NFC-e emitida em outro sistema (referência, sem validação). */
+  updateNfceNumber(id: number, nfceNumber: string | null): Promise<SaleWithItems | null>;
 }

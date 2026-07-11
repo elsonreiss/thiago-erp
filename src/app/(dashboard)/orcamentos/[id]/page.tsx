@@ -7,6 +7,7 @@ import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { BudgetStatusBadge } from "@/components/budgets/BudgetStatusBadge";
 import { BudgetActions } from "@/components/budgets/BudgetActions";
 import { BudgetPrintContent } from "@/components/budgets/BudgetPrintContent";
+import { toCompanyPrintInfo } from "@/lib/companyInfo";
 import { DownloadPdfButton } from "@/components/ui/DownloadPdfButton";
 import { buildBudgetWhatsAppMessage } from "@/lib/budgetMessage";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
@@ -25,6 +26,7 @@ export default async function OrcamentoDetalhePage({ params }: Params) {
   const whatsappLink = buildWhatsAppLink(whatsappNumber, buildBudgetWhatsAppMessage(budget));
 
   const subtotal = budget.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
+  const companyInfo = toCompanyPrintInfo(await container.companySettingsRepository.get());
 
   return (
     <>
@@ -144,7 +146,7 @@ export default async function OrcamentoDetalhePage({ params }: Params) {
         </div>
       )}
     </div>
-    <BudgetPrintContent budget={budget} />
+    <BudgetPrintContent budget={budget} storeName={companyInfo.name} companyDetail={companyInfo.detailLine} />
     </>
   );
 }

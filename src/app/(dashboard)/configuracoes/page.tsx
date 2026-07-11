@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { Building2, Pencil, Plus, ShieldCheck } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { container } from "@/container";
 import { UserRoleBadge } from "@/components/settings/UserRoleBadge";
@@ -17,12 +17,26 @@ export default async function ConfiguracoesPage() {
           <h1 className="font-display text-2xl font-semibold text-text-primary">Configurações</h1>
           <p className="text-sm text-text-secondary">Gestão de usuários e permissões.</p>
         </div>
-        <Link
-          href="/configuracoes/novo"
-          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-hover"
-        >
-          <Plus size={16} /> Novo usuário
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/configuracoes/empresa"
+            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-secondary"
+          >
+            <Building2 size={16} /> Dados da empresa
+          </Link>
+          <Link
+            href="/configuracoes/privacidade"
+            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-secondary"
+          >
+            <ShieldCheck size={16} /> Privacidade (LGPD)
+          </Link>
+          <Link
+            href="/configuracoes/novo"
+            className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-hover"
+          >
+            <Plus size={16} /> Novo usuário
+          </Link>
+        </div>
       </div>
 
       <div className="price-tag-card overflow-x-auto rounded-xl">
