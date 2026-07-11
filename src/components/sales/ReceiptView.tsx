@@ -15,8 +15,14 @@ export function ReceiptView({ sale, storeName = "Thiago Casa & Construção" }: 
   const subtotal = sale.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
   const discount = parseFloat(sale.discount);
 
+  const pageSize =
+    format === "58" ? "58mm auto" : format === "80" ? "80mm auto" : "A4";
+  const pageMargin = format === "a4" ? "15mm" : "0";
+
   return (
     <div className="flex flex-col gap-6">
+      <style>{`@page { size: ${pageSize}; margin: ${pageMargin}; }`}</style>
+
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           href={`/vendas/${sale.id}`}
