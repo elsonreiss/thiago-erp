@@ -7,7 +7,7 @@ import { Product } from "@/domain/entities/Product";
 import { Customer } from "@/domain/entities/Customer";
 import { PaymentMethod } from "@/domain/entities/Sale";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from "@/lib/payment";
-import { formatCurrency, parseCurrencyInput } from "@/lib/format";
+import { formatCurrency, parseCurrencyInput, toCurrencyInputValue } from "@/lib/format";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 import { ManualItemForm } from "@/components/ui/ManualItemForm";
 
@@ -57,7 +57,7 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
           product,
           manualName: "",
           quantity: 1,
-          unit_price: product.sale_price,
+          unit_price: toCurrencyInputValue(product.sale_price),
         },
       ];
     });
@@ -83,7 +83,7 @@ export function SaleForm({ sellerName }: { sellerName: string }) {
     setScanError(null);
     setScanning(true);
     try {
-      const res = await fetch(`/api/products/lookup?code=${encodeURIComponent(trimmed)}`);
+      const res = await fetch(`/api/products/lookup?code=${encodeURIComponent(trimmed)}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setScanError(data.error ?? "Produto não encontrado.");

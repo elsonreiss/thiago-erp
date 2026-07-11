@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, PackagePlus, Plus } from "lucide-react";
 import { Product } from "@/domain/entities/Product";
-import { formatCurrency, parseCurrencyInput } from "@/lib/format";
+import { formatCurrency, parseCurrencyInput, toCurrencyInputValue } from "@/lib/format";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 import { ManualItemForm } from "@/components/ui/ManualItemForm";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -27,7 +27,7 @@ export function AddNoteItemForm({ noteId }: { noteId: number }) {
 
   function selectProduct(p: Product) {
     setProduct(p);
-    setUnitPrice(p.sale_price);
+    setUnitPrice(toCurrencyInputValue(p.sale_price));
     setQuantity(1);
   }
 

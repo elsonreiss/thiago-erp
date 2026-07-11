@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Save } from "lucide-react";
-import { formatCurrency, parseCurrencyInput } from "@/lib/format";
+import { formatCurrency, parseCurrencyInput, toCurrencyInputValue } from "@/lib/format";
 
 interface CashClosingFormProps {
   closingDate: string;
@@ -23,8 +23,12 @@ export function CashClosingForm({
   alreadyClosed,
 }: CashClosingFormProps) {
   const router = useRouter();
-  const [opening, setOpening] = useState(initialOpeningAmount ?? "0,00");
-  const [counted, setCounted] = useState(initialCountedCash ?? "0,00");
+  const [opening, setOpening] = useState(
+    initialOpeningAmount ? toCurrencyInputValue(initialOpeningAmount) : "0,00"
+  );
+  const [counted, setCounted] = useState(
+    initialCountedCash ? toCurrencyInputValue(initialCountedCash) : "0,00"
+  );
   const [notes, setNotes] = useState(initialNotes ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

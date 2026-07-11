@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FileText, Loader2, Trash2, User, X } from "lucide-react";
 import { Product } from "@/domain/entities/Product";
 import { Customer } from "@/domain/entities/Customer";
-import { formatCurrency, parseCurrencyInput } from "@/lib/format";
+import { formatCurrency, parseCurrencyInput, toCurrencyInputValue } from "@/lib/format";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 
 interface CartLine {
@@ -47,7 +47,7 @@ export function BudgetForm({ sellerName }: { sellerName: string }) {
           key: `${product.id}-${Date.now()}`,
           product,
           quantity: 1,
-          unit_price: product.sale_price,
+          unit_price: toCurrencyInputValue(product.sale_price),
         },
       ];
     });

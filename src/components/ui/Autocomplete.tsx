@@ -95,7 +95,7 @@ export function Autocomplete<T>({
     setLoading(true);
     const timeout = setTimeout(async () => {
       try {
-        const res = await fetch(`${searchUrl}?q=${encodeURIComponent(term)}`);
+        const res = await fetch(`${searchUrl}?q=${encodeURIComponent(term)}`, { cache: "no-store" });
         let data: Record<string, unknown> = {};
         try {
           data = await res.json();

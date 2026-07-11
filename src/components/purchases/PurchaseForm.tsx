@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, PackagePlus, Plus, Trash2, User, X } from "lucide-react";
 import { Product } from "@/domain/entities/Product";
 import { Supplier } from "@/domain/entities/Supplier";
-import { formatCurrency, parseCurrencyInput } from "@/lib/format";
+import { formatCurrency, parseCurrencyInput, toCurrencyInputValue } from "@/lib/format";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 import { QuickCreateProductModal } from "@/components/products/QuickCreateProductModal";
 
@@ -45,7 +45,7 @@ export function PurchaseForm({ userName }: { userName: string }) {
           key: `${product.id}-${Date.now()}`,
           product,
           quantity: 1,
-          unit_price: product.purchase_price,
+          unit_price: toCurrencyInputValue(product.purchase_price),
         },
       ];
     });

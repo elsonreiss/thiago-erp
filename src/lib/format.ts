@@ -13,6 +13,19 @@ export function parseCurrencyInput(value: string): string {
   return Number.isFinite(num) ? num.toFixed(2) : "0.00";
 }
 
+/**
+ * Converte um valor numérico "cru" do banco (ex: "10.5", que usa ponto decimal) no formato
+ * brasileiro de exibição em input editável (ex: "10,50", com vírgula decimal). Use isso sempre
+ * que for pré-preencher um campo de preço editável a partir de um valor vindo do banco — nunca
+ * jogue a string crua do banco direto no input, porque parseCurrencyInput() trata "." como
+ * separador de milhar e vai multiplicar o valor por 100+ quando o campo perde o foco sem edição.
+ */
+export function toCurrencyInputValue(value: string | number | null | undefined): string {
+  const num = typeof value === "string" ? parseFloat(value) : value ?? 0;
+  if (!Number.isFinite(num)) return "0,00";
+  return num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function formatNumber(value: number | string | null | undefined): string {
   const num = typeof value === "string" ? parseFloat(value) : value ?? 0;
   return new Intl.NumberFormat("pt-BR").format(Number.isFinite(num) ? num : 0);

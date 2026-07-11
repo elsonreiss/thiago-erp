@@ -7,7 +7,7 @@ import { AlertTriangle, Barcode, ImagePlus, Loader2, Trash2, X } from "lucide-re
 import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_UNITS, Product } from "@/domain/entities/Product";
 import { Supplier } from "@/domain/entities/Supplier";
 import { resizeAndCompressImage } from "@/lib/image";
-import { parseCurrencyInput } from "@/lib/format";
+import { parseCurrencyInput, toCurrencyInputValue } from "@/lib/format";
 import { Autocomplete } from "@/components/ui/Autocomplete";
 
 export function ProductForm({ product, initialSupplier }: { product?: Product; initialSupplier?: Supplier | null }) {
@@ -46,7 +46,7 @@ export function ProductForm({ product, initialSupplier }: { product?: Product; i
     if (!trimmed) return;
     setCheckingBarcode(true);
     try {
-      const res = await fetch(`/api/products/lookup?code=${encodeURIComponent(trimmed)}`);
+      const res = await fetch(`/api/products/lookup?code=${encodeURIComponent(trimmed)}`, { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
       const found = data.product;
@@ -245,7 +245,7 @@ export function ProductForm({ product, initialSupplier }: { product?: Product; i
               name="purchase_price"
               type="text"
               inputMode="decimal"
-              defaultValue={product?.purchase_price ?? "0,00"}
+              defaultValue={product ? toCurrencyInputValue(product.purchase_price) : "0,00"}
               className={`${inputClass} font-numeric`}
             />
           </Field>
@@ -255,7 +255,7 @@ export function ProductForm({ product, initialSupplier }: { product?: Product; i
               type="text"
               inputMode="decimal"
               required
-              defaultValue={product?.sale_price ?? "0,00"}
+              defaultValue={product ? toCurrencyInputValue(product.sale_price) : "0,00"}
               className={`${inputClass} font-numeric`}
             />
           </Field>
