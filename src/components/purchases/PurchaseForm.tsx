@@ -203,7 +203,9 @@ export function PurchaseForm({ userName }: { userName: string }) {
                           value={line.unit_price}
                           onChange={(e) => updateLine(line.key, { unit_price: e.target.value })}
                           onBlur={(e) =>
-                            updateLine(line.key, { unit_price: parseCurrencyInput(e.target.value) })
+                            updateLine(line.key, {
+                              unit_price: toCurrencyInputValue(parseCurrencyInput(e.target.value)),
+                            })
                           }
                           className="w-28 rounded-lg border border-border bg-bg-secondary px-2 py-1.5 text-right font-numeric focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                         />

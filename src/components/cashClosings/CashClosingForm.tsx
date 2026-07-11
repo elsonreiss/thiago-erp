@@ -104,7 +104,7 @@ export function CashClosingForm({
               inputMode="decimal"
               value={opening}
               onChange={(e) => setOpening(e.target.value)}
-              onBlur={(e) => setOpening(parseCurrencyInput(e.target.value))}
+              onBlur={(e) => setOpening(toCurrencyInputValue(parseCurrencyInput(e.target.value)))}
               className="rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm font-numeric focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </label>
@@ -115,7 +115,7 @@ export function CashClosingForm({
               inputMode="decimal"
               value={counted}
               onChange={(e) => setCounted(e.target.value)}
-              onBlur={(e) => setCounted(parseCurrencyInput(e.target.value))}
+              onBlur={(e) => setCounted(toCurrencyInputValue(parseCurrencyInput(e.target.value)))}
               className="rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm font-numeric focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </label>

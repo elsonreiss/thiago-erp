@@ -23,7 +23,7 @@ import {
   guessColumnMapping,
 } from "@/lib/productImport";
 import { parseInvoicePdf } from "@/lib/pdfInvoice";
-import { parseCurrencyInput } from "@/lib/format";
+import { parseCurrencyInput, toCurrencyInputValue } from "@/lib/format";
 
 type Source = "spreadsheet" | "pdf";
 type Step = "upload" | "mapping" | "preview" | "result";
@@ -481,7 +481,9 @@ export function ImportProductsWizard() {
                       <input
                         value={d.purchase_price}
                         onChange={(e) => updateDraft(d.key, { purchase_price: e.target.value })}
-                        onBlur={(e) => updateDraft(d.key, { purchase_price: parseCurrencyInput(e.target.value) })}
+                        onBlur={(e) =>
+                          updateDraft(d.key, { purchase_price: toCurrencyInputValue(parseCurrencyInput(e.target.value)) })
+                        }
                         className={`${cellInputClass} text-right font-numeric`}
                       />
                     </td>
@@ -489,7 +491,9 @@ export function ImportProductsWizard() {
                       <input
                         value={d.sale_price}
                         onChange={(e) => updateDraft(d.key, { sale_price: e.target.value })}
-                        onBlur={(e) => updateDraft(d.key, { sale_price: parseCurrencyInput(e.target.value) })}
+                        onBlur={(e) =>
+                          updateDraft(d.key, { sale_price: toCurrencyInputValue(parseCurrencyInput(e.target.value)) })
+                        }
                         className={`${cellInputClass} text-right font-numeric`}
                       />
                     </td>

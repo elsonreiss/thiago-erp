@@ -198,7 +198,9 @@ export function BudgetForm({ sellerName }: { sellerName: string }) {
                           value={line.unit_price}
                           onChange={(e) => updateLine(line.key, { unit_price: e.target.value })}
                           onBlur={(e) =>
-                            updateLine(line.key, { unit_price: parseCurrencyInput(e.target.value) })
+                            updateLine(line.key, {
+                              unit_price: toCurrencyInputValue(parseCurrencyInput(e.target.value)),
+                            })
                           }
                           className="w-28 rounded-lg border border-border bg-bg-secondary px-2 py-1.5 text-right font-numeric focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                         />
@@ -233,7 +235,7 @@ export function BudgetForm({ sellerName }: { sellerName: string }) {
               inputMode="decimal"
               value={discount}
               onChange={(e) => setDiscount(e.target.value)}
-              onBlur={(e) => setDiscount(parseCurrencyInput(e.target.value))}
+              onBlur={(e) => setDiscount(toCurrencyInputValue(parseCurrencyInput(e.target.value)))}
               className={`${inputClass} font-numeric`}
             />
           </Field>
