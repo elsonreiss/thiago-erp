@@ -1,13 +1,16 @@
 import Link from "next/link";
 import {
   AlertTriangle,
+  Boxes,
   DollarSign,
+  FileText,
   PackageX,
+  Percent,
   Receipt,
-  ShoppingCart,
   Star,
   TrendingUp,
   Users,
+  Wallet,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { container } from "@/container";
@@ -44,7 +47,7 @@ export default async function DashboardPage() {
     problemProducts,
     recentSales,
     topProducts,
-    customersCount,
+    budgetsThisMonth,
   ] = await Promise.all([
     container.productRepository.countTotal(),
     container.productRepository.countOutOfStock(),
@@ -54,7 +57,7 @@ export default async function DashboardPage() {
       .findAll(canSeeFinancials ? {} : { userId: user.id })
       .then((list) => list.slice(0, 8)),
     container.productRepository.mostSold(5, monthStart),
-    container.customerRepository.findAll().then((c) => c.length),
+    container.budgetRepository.countApproved(monthStart, todayEnd),
   ]);
 
   const stockAlertProducts =
@@ -77,6 +80,10 @@ export default async function DashboardPage() {
   let dailyRevenue: RevenuePoint[] = [];
   let weeklyRevenue: RevenuePoint[] = [];
   let monthlyRevenue: RevenuePoint[] = [];
+  let profitToday = 0;
+  let profitMonth = 0;
+  let expensesMonth = 0;
+  let stockValue = 0;
 
   if (canSeeFinancials) {
     const fourteenDaysAgo = new Date(now);
@@ -85,27 +92,49 @@ export default async function DashboardPage() {
     eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 55);
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [salesTodayCount, revToday, revMonth, dailyRows, weeklyRows, monthlyRows, buyers, sellerTotals, monthSales, allUsers] =
-      await Promise.all([
-        container.saleRepository.countSalesToday(),
-        container.saleRepository.totalRevenue(todayStart, todayEnd),
-        container.saleRepository.totalRevenue(monthStart, `${toDateOnly(now)} 23:59:59`),
-        container.saleRepository.revenueByDay(`${toDateOnly(fourteenDaysAgo)} 00:00:00`, `${toDateOnly(now)} 23:59:59`),
-        container.saleRepository.revenueByDay(`${toDateOnly(eightWeeksAgo)} 00:00:00`, `${toDateOnly(now)} 23:59:59`),
-        container.saleRepository.revenueByMonth(
-          `${toDateOnly(sixMonthsAgo)} 00:00:00`,
-          `${toDateOnly(now)} 23:59:59`
-        ),
-        container.customerRepository.topBuyers(5, monthStart),
-        container.saleRepository.revenueBySeller(monthStart, `${toDateOnly(now)} 23:59:59`),
-        container.saleRepository.findAll({ from: monthStart, to: `${toDateOnly(now)} 23:59:59` }),
-        container.userRepository.findAll(),
-      ]);
+    const [
+      salesTodayCount,
+      revToday,
+      revMonth,
+      dailyRows,
+      weeklyRows,
+      monthlyRows,
+      buyers,
+      sellerTotals,
+      monthSales,
+      allUsers,
+      costToday,
+      costMonth,
+      expensesMonthVal,
+      stockValueVal,
+    ] = await Promise.all([
+      container.saleRepository.countSalesToday(),
+      container.saleRepository.totalRevenue(todayStart, todayEnd),
+      container.saleRepository.totalRevenue(monthStart, `${toDateOnly(now)} 23:59:59`),
+      container.saleRepository.revenueByDay(`${toDateOnly(fourteenDaysAgo)} 00:00:00`, `${toDateOnly(now)} 23:59:59`),
+      container.saleRepository.revenueByDay(`${toDateOnly(eightWeeksAgo)} 00:00:00`, `${toDateOnly(now)} 23:59:59`),
+      container.saleRepository.revenueByMonth(
+        `${toDateOnly(sixMonthsAgo)} 00:00:00`,
+        `${toDateOnly(now)} 23:59:59`
+      ),
+      container.customerRepository.topBuyers(5, monthStart),
+      container.saleRepository.revenueBySeller(monthStart, `${toDateOnly(now)} 23:59:59`),
+      container.saleRepository.findAll({ from: monthStart, to: `${toDateOnly(now)} 23:59:59` }),
+      container.userRepository.findAll(),
+      container.saleRepository.costOfGoodsSold(todayStart, todayEnd),
+      container.saleRepository.costOfGoodsSold(monthStart, `${toDateOnly(now)} 23:59:59`),
+      container.expenseRepository.totalInRange(monthStart, `${toDateOnly(now)} 23:59:59`),
+      container.productRepository.stockCostValue(),
+    ]);
 
     salesToday = salesTodayCount;
     revenueToday = revToday;
     revenueMonth = revMonth;
     topCustomers = buyers;
+    profitToday = revToday - costToday;
+    profitMonth = revMonth - costMonth;
+    expensesMonth = expensesMonthVal;
+    stockValue = stockValueVal;
 
     const salesByUser = new Map<number, SaleWithItems[]>();
     for (const sale of monthSales) {
@@ -159,18 +188,25 @@ export default async function DashboardPage() {
         <p className="text-sm text-text-secondary">Visão geral da loja.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <KpiCard icon={Boxes} label="Total de produtos" value={String(totalProducts)} tone="neutral" />
         {canSeeFinancials && (
-          <KpiCard icon={DollarSign} label="Receita hoje" value={formatCurrency(revenueToday)} accent="text-success" />
+          <KpiCard icon={DollarSign} label="Valor em estoque" value={formatCurrency(stockValue)} tone="neutral" />
         )}
+        <KpiCard icon={PackageX} label="Produtos em falta" value={String(outOfStock)} tone="danger" />
+        <KpiCard icon={AlertTriangle} label="Estoque baixo" value={String(lowStock)} tone="warning" />
+        <KpiCard icon={FileText} label="Orçamentos realizados" value={String(budgetsThisMonth)} tone="accent" />
+
+        <KpiCard icon={Receipt} label="Vendas hoje" value={String(canSeeFinancials ? salesToday : "—")} tone="neutral" />
         {canSeeFinancials && (
-          <KpiCard icon={TrendingUp} label="Receita do mês" value={formatCurrency(revenueMonth)} accent="text-accent" />
+          <>
+            <KpiCard icon={TrendingUp} label="Vendido hoje" value={formatCurrency(revenueToday)} tone="success" />
+            <KpiCard icon={TrendingUp} label="Vendido no mês" value={formatCurrency(revenueMonth)} tone="success" />
+            <KpiCard icon={Percent} label="Lucro do dia" value={formatCurrency(profitToday)} tone="accent" />
+            <KpiCard icon={Percent} label="Lucro do mês" value={formatCurrency(profitMonth)} tone="accent" />
+            <KpiCard icon={Wallet} label="Gastos do mês" value={formatCurrency(expensesMonth)} tone="danger" />
+          </>
         )}
-        <KpiCard icon={Receipt} label="Vendas hoje" value={String(canSeeFinancials ? salesToday : "—")} accent="text-text-primary" />
-        <KpiCard icon={Users} label="Clientes ativos" value={String(customersCount)} accent="text-text-primary" />
-        <KpiCard icon={PackageX} label="Produtos em falta" value={String(outOfStock)} accent="text-danger" />
-        <KpiCard icon={AlertTriangle} label="Estoque baixo" value={String(lowStock)} accent="text-warning" />
-        <KpiCard icon={ShoppingCart} label="Produtos cadastrados" value={String(totalProducts)} accent="text-text-primary" />
       </div>
 
       {canSeeFinancials && (
@@ -340,21 +376,29 @@ export default async function DashboardPage() {
   );
 }
 
+const KPI_TONE_CLASSES = {
+  neutral: "bg-bg-secondary text-text-primary",
+  danger: "bg-danger-soft text-danger",
+  warning: "bg-warning-soft text-warning",
+  accent: "bg-accent-soft text-accent",
+  success: "bg-success-soft text-success",
+} as const;
+
 function KpiCard({
   icon: Icon,
   label,
   value,
-  accent,
+  tone,
 }: {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   label: string;
   value: string;
-  accent: string;
+  tone: keyof typeof KPI_TONE_CLASSES;
 }) {
   return (
     <div className="price-tag-card flex items-center gap-4 rounded-xl p-5">
-      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-bg-secondary">
-        <Icon size={20} className={accent} />
+      <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${KPI_TONE_CLASSES[tone]}`}>
+        <Icon size={20} />
       </div>
       <div>
         <p className="font-numeric text-2xl font-semibold text-text-primary">{value}</p>

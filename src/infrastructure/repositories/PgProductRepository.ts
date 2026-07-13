@@ -208,6 +208,13 @@ export class PgProductRepository implements ProductRepository {
     return Number(rows[0]?.count ?? 0);
   }
 
+  async stockCostValue(): Promise<number> {
+    const { rows } = await query<{ total: string }>(
+      "SELECT COALESCE(SUM(purchase_price * quantity), 0)::text AS total FROM products WHERE active = true"
+    );
+    return Number(rows[0]?.total ?? 0);
+  }
+
   async mostSold(limit: number, since?: string): Promise<Array<{ product: Product; total_quantity: number }>> {
     const params: unknown[] = [];
     let sinceClause = "";

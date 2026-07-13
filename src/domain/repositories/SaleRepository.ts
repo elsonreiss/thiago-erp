@@ -46,4 +46,10 @@ export interface SaleRepository {
   delete(id: number): Promise<void>;
   /** Salva o número/chave da NFC-e emitida em outro sistema (referência, sem validação). */
   updateNfceNumber(id: number, nfceNumber: string | null): Promise<SaleWithItems | null>;
+  /**
+   * Custo estimado das mercadorias vendidas no período (preço de compra ATUAL dos produtos × quantidade
+   * vendida). Itens avulsos (sem product_id) ou produtos já excluídos entram com custo zero — é uma
+   * aproximação pra KPI de lucro do dashboard, não uma apuração contábil exata.
+   */
+  costOfGoodsSold(from: string, to: string): Promise<number>;
 }

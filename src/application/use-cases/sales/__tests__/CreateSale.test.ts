@@ -60,6 +60,10 @@ class FakeSaleRepository implements SaleRepository {
   async updateNfceNumber(): Promise<SaleWithItems | null> {
     return null;
   }
+
+  async costOfGoodsSold(): Promise<number> {
+    return 0;
+  }
 }
 
 function baseInput(overrides: Partial<CreateSaleInput> = {}): CreateSaleInput {

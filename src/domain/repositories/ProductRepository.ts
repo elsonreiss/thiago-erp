@@ -44,4 +44,6 @@ export interface ProductRepository {
   countLowStock(): Promise<number>;
   mostSold(limit: number, since?: string): Promise<Array<{ product: Product; total_quantity: number }>>;
   stagnant(daysSinceLastMovement: number): Promise<Product[]>;
+  /** Valor total em estoque pelo preço de custo (soma de purchase_price * quantity), só produtos ativos. */
+  stockCostValue(): Promise<number>;
 }

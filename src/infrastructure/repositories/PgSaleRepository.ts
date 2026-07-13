@@ -74,6 +74,18 @@ export class PgSaleRepository implements SaleRepository {
     return this.findById(id);
   }
 
+  async costOfGoodsSold(from: string, to: string): Promise<number> {
+    const { rows } = await query<{ total: string }>(
+      `SELECT COALESCE(SUM(COALESCE(p.purchase_price, 0) * si.quantity), 0)::text AS total
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       LEFT JOIN products p ON p.id = si.product_id
+       WHERE s.created_at >= $1 AND s.created_at <= $2`,
+      [from, to]
+    );
+    return Number(rows[0]?.total ?? 0);
+  }
+
   async findAll(filters: SaleFilters = {}): Promise<SaleWithItems[]> {
     const conditions: string[] = [];
     const values: unknown[] = [];
