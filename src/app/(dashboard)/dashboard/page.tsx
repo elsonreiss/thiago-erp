@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   Boxes,
   DollarSign,
-  FileText,
   PackageX,
   Percent,
   Receipt,
@@ -47,7 +46,6 @@ export default async function DashboardPage() {
     problemProducts,
     recentSales,
     topProducts,
-    budgetsThisMonth,
   ] = await Promise.all([
     container.productRepository.countTotal(),
     container.productRepository.countOutOfStock(),
@@ -57,7 +55,6 @@ export default async function DashboardPage() {
       .findAll(canSeeFinancials ? {} : { userId: user.id })
       .then((list) => list.slice(0, 8)),
     container.productRepository.mostSold(5, monthStart),
-    container.budgetRepository.countApproved(monthStart, todayEnd),
   ]);
 
   const stockAlertProducts =
@@ -188,14 +185,13 @@ export default async function DashboardPage() {
         <p className="text-sm text-text-secondary">Visão geral da loja.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard icon={Boxes} label="Total de produtos" value={String(totalProducts)} tone="neutral" />
         {canSeeFinancials && (
           <KpiCard icon={DollarSign} label="Valor em estoque" value={formatCurrency(stockValue)} tone="neutral" />
         )}
         <KpiCard icon={PackageX} label="Produtos em falta" value={String(outOfStock)} tone="danger" />
         <KpiCard icon={AlertTriangle} label="Estoque baixo" value={String(lowStock)} tone="warning" />
-        <KpiCard icon={FileText} label="Orçamentos realizados" value={String(budgetsThisMonth)} tone="accent" />
 
         <KpiCard icon={Receipt} label="Vendas hoje" value={String(canSeeFinancials ? salesToday : "—")} tone="neutral" />
         {canSeeFinancials && (
